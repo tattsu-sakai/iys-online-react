@@ -54,7 +54,7 @@ export default function WelcomeStep({ onBack, onNext }: WelcomeStepProps) {
           ))}
         </ContentCard>
 
-        <OpeningSection title="いちよしオンラインとは">
+        <OpeningSection title="サンプルオンラインとは">
           <p className="text-[15px] leading-8 text-[var(--ichiyoshi-ink-soft)]">
             各種申込みや口座関連のお手続きを、オンラインでまとめて進められるサービスです。
           </p>

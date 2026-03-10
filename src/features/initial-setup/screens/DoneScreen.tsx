@@ -30,7 +30,7 @@ export default function DoneScreen({ onBackToTop }: DoneScreenProps) {
                 ご利用準備が整いました
               </h2>
               <p className="mt-3 text-[15px] leading-7 text-[var(--ichiyoshi-ink-soft)]">
-                初期設定へのご協力ありがとうございます。これで いちよしオンライン のすべての機能をご利用いただけます。
+                初期設定へのご協力ありがとうございます。これで サンプルオンライン のすべての機能をご利用いただけます。
               </p>
             </div>
 

@@ -85,7 +85,7 @@ const menuSections: MenuSection[] = [
 
 export default function AppNavigationMenu({
   activeScreen,
-  customerName = 'いちよし太郎 様',
+  customerName = 'サンプル太郎 様',
   onClose,
   onLogout,
   onOpenApplications,
@@ -176,7 +176,7 @@ export default function AppNavigationMenu({
                   <p className='mt-1 text-[16px] font-semibold tracking-[0.04em] text-white'>{customerName}</p>
                 </div>
                 <span className='inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-white/82'>
-                  いちよしオンライン
+                  サンプルオンライン
                 </span>
               </div>
             </div>

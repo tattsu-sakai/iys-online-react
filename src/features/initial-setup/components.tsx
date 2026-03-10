@@ -6,7 +6,7 @@ import type { SetupStep } from '@/features/initial-setup/model';
 import { cn } from '@/lib/utils';
 
 export const companyInfoLines = [
-  '商号等：いちよし証券株式会社 金融商品取引業者',
+  '商号等：サンプル証券株式会社 金融商品取引業者',
   '関東財務局長（金商）第24号',
   '加入協会：日本証券業協会 一般社団法人日本投資顧問業協会',
 ];
@@ -44,7 +44,7 @@ const stageMeta: Record<
   },
   done: {
     eyebrow: 'ご利用開始',
-    summary: '初期設定は完了です。これで いちよしオンライン の各機能をご利用いただけます。',
+    summary: '初期設定は完了です。これで サンプルオンライン の各機能をご利用いただけます。',
   },
 };
 
@@ -60,7 +60,7 @@ export function BrandMark({ className }: { className?: string }) {
         <span className='h-6 w-[4px] rounded-full bg-[#8e1d19]' />
         <span className='h-6 w-[4px] rounded-full bg-[#efe3ba]' />
       </span>
-      <span className='text-[20px] font-medium tracking-[0.08em] text-[#8f7b60]'>いちよし証券</span>
+      <span className='text-[20px] font-medium tracking-[0.08em] text-[#8f7b60]'>サンプル証券</span>
     </div>
   );
 }

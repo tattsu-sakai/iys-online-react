@@ -112,8 +112,8 @@ export default function TopScreen({
                 <ServiceScreenHeroPanel
                   badge='資産ダッシュボード'
                   description='保有資産と取引状況を、商品分類ごとにひと目で確認できるダッシュボードです。'
-                  pretitle={isDashboardLoading ? <Skeleton className='h-5 w-36 rounded-full bg-white/20' /> : 'いちよし太郎 様'}
-                  title='いちよしオンライン'
+                  pretitle={isDashboardLoading ? <Skeleton className='h-5 w-36 rounded-full bg-white/20' /> : 'サンプル太郎 様'}
+                  title='サンプルオンライン'
                 />
               </ServiceScreenHeader>
 
