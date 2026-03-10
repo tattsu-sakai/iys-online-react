@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useAtom } from 'jotai';
 
 import {
   allStep1DocumentsReviewed,
-  defaultStep1State,
   type Step1State,
   step1ScreenOrder,
   type Step1DocumentKey,
   type Step1Screen,
 } from "@/features/account-opening-step1/model";
+import { step1ScreenAtom, step1StateAtom } from '@/features/account-opening-step1/state';
 import Step1ConfirmationScreen from "@/features/account-opening-step1/screens/Step1ConfirmationScreen";
 import Step1DocumentsReviewScreen from "@/features/account-opening-step1/screens/Step1DocumentsReviewScreen";
 import Step1ElectronicDeliveryScreen from "@/features/account-opening-step1/screens/Step1ElectronicDeliveryScreen";
@@ -18,21 +19,41 @@ type AccountOpeningStep1FlowProps = {
   onProceedToStep2: () => void;
   initialScreen?: Step1Screen;
   initialState?: Step1State;
+  onScreenChange?: (screen: Step1Screen) => void;
+  screen?: Step1Screen;
 };
 
 export default function AccountOpeningStep1Flow({
   onBackToTop,
   onProceedToStep2,
   initialScreen = "intro",
-  initialState = defaultStep1State,
+  initialState,
+  onScreenChange,
+  screen: controlledScreen,
 }: AccountOpeningStep1FlowProps) {
-  const [screen, setScreen] = useState<Step1Screen>(initialScreen);
-  const [state, setState] = useState(initialState);
+  const [internalScreen, setInternalScreen] = useAtom(step1ScreenAtom);
+  const [state, setState] = useAtom(step1StateAtom);
+  const screen = controlledScreen ?? internalScreen;
+  const setScreen = (nextScreen: Step1Screen) => {
+    if (controlledScreen !== undefined) {
+      onScreenChange?.(nextScreen);
+      return;
+    }
+
+    setInternalScreen(nextScreen);
+  };
 
   useEffect(() => {
-    setScreen(initialScreen);
-    setState(initialState);
-  }, [initialScreen, initialState]);
+    if (controlledScreen === undefined) {
+      setInternalScreen(initialScreen);
+    }
+  }, [controlledScreen, initialScreen, setInternalScreen]);
+
+  useEffect(() => {
+    if (initialState !== undefined) {
+      setState(initialState);
+    }
+  }, [initialState, setState]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

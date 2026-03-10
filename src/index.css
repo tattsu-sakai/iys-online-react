@@ -69,6 +69,12 @@ body {
   min-height: 100vh;
 }
 
+@media (max-width: 639px) {
+  body.has-mobile-quick-access {
+    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+}
+
 ::selection {
   background: rgba(162, 133, 86, 0.22);
 }

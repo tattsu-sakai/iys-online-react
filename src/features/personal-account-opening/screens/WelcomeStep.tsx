@@ -78,7 +78,7 @@ export default function WelcomeStep({ onBack, onNext }: WelcomeStepProps) {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <SecondaryButton type="button" onClick={onBack}>
-            TOPへ戻る
+            ログインへ戻る
           </SecondaryButton>
           <PrimaryButton type="button" onClick={onNext} data-node-id="32374:74370">
             次へ

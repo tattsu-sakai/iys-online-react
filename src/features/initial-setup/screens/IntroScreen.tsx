@@ -30,19 +30,19 @@ type IntroScreenProps = {
 
 export default function IntroScreen({ onBack, onStart }: IntroScreenProps) {
   return (
-    <ScreenFrame title="いちよしオンライン" stage="intro">
+    <ScreenFrame title="法人のお客様向けご案内" stage="intro">
       <div className="flex-1 px-4 pb-8 pt-6 sm:px-6 xl:px-8 xl:pb-10 xl:pt-8">
         <div className="space-y-5 xl:grid xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start xl:gap-5 xl:space-y-0">
           <div className="space-y-5">
             <ContentCard className="space-y-6">
               <div className="space-y-4">
-                <SectionLabel>サービス概要</SectionLabel>
+                <SectionLabel>法人のお客様向け</SectionLabel>
                 <div className="space-y-3 text-[15px] leading-7 text-[var(--ichiyoshi-ink-soft)]">
                   <p>
-                    いちよしオンラインでは、資産情報や各種照会をオンライン上でまとめてご確認いただけます。
+                    法人のお客様向けのご案内ページです。初期設定時のログインは個人のお客様と同じログイン画面をご利用いただき、その後の利用開始手順や確認事項をこちらでご案内します。
                   </p>
                   <p>
-                    初期設定は数分で完了し、そのまま日々の確認業務に移行できます。
+                    ご利用開始に向けた初期設定は数分で完了し、そのまま日々の確認業務に移行できます。
                   </p>
                 </div>
               </div>
@@ -65,7 +65,7 @@ export default function IntroScreen({ onBack, onStart }: IntroScreenProps) {
                   <Check className="h-5 w-5" />
                 </span>
                 <p>
-                  初期設定が完了すると、預り資産やトータルリターン、各種報告書照会などにすぐアクセスできます。
+                  法人のお客様も、共通ログイン画面で初期設定を進めることで、預り資産やトータルリターン、各種報告書照会などにすぐアクセスできます。
                 </p>
               </div>
             </HintCard>
@@ -75,12 +75,12 @@ export default function IntroScreen({ onBack, onStart }: IntroScreenProps) {
             <ContentCard className="space-y-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <SectionLabel>初期設定の流れ</SectionLabel>
+                  <SectionLabel>ご利用開始までの流れ</SectionLabel>
                   <p className="mt-4 text-[15px] leading-7 text-[var(--ichiyoshi-ink-soft)]">
-                    安全にご利用いただくため、以下の 3 ステップで初期設定を行います。
+                    法人のお客様にも安全にご利用いただくため、以下の 3 ステップで初期設定を行います。
                   </p>
                 </div>
-                <span className="rounded-full bg-[rgba(162,133,86,0.12)] px-3 py-1 text-[12px] font-semibold tracking-[0.08em] text-[var(--ichiyoshi-gold-soft)]">
+                <span className="inline-flex shrink-0 self-start items-center justify-center rounded-full bg-[rgba(162,133,86,0.12)] px-3 py-1 text-[12px] font-semibold leading-none tracking-[0.08em] text-[var(--ichiyoshi-gold-soft)] whitespace-nowrap">
                   約1〜3分
                 </span>
               </div>

@@ -10,14 +10,14 @@ type EmailSentStepProps = {
   email: string;
   resendMessage: string;
   onResend: () => void;
-  onReturnToTop: () => void;
+  onReturnToLogin: () => void;
 };
 
 export default function EmailSentStep({
   email,
   resendMessage,
   onResend,
-  onReturnToTop,
+  onReturnToLogin,
 }: EmailSentStepProps) {
   return (
     <AccountOpeningShell
@@ -54,8 +54,8 @@ export default function EmailSentStep({
           <SecondaryButton type="button" onClick={onResend}>
             もう一度送信する
           </SecondaryButton>
-          <PrimaryButton type="button" onClick={onReturnToTop}>
-            TOP画面へ戻る
+          <PrimaryButton type="button" onClick={onReturnToLogin}>
+            ログインへ戻る
           </PrimaryButton>
         </div>
 

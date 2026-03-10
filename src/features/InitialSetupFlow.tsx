@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAtom, useSetAtom } from 'jotai';
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   defaultFormState,
@@ -6,38 +8,80 @@ import {
   isPasswordValid,
   type FormErrors,
   type FormState,
-  type SetupStep,
 } from "@/features/initial-setup/model";
+import {
+  initialSetupErrorsAtom,
+  initialSetupFormStateAtom,
+  initialSetupVerifyMessageAtom,
+  resetInitialSetupStateAtom,
+} from '@/features/initial-setup/state';
+import {
+  flowPaths,
+  getPortfolioAssetsPath,
+  getFlowScreenFromPathname,
+} from "@/features/flow-routes";
 import AccountOpeningStep1Flow from "@/features/account-opening-step1/AccountOpeningStep1Flow";
 import { completedStep1State } from "@/features/account-opening-step1/model";
+import type { Step1Screen } from "@/features/account-opening-step1/model";
+import { resetStep1StateAtom } from '@/features/account-opening-step1/state';
 import AccountOpeningStep2Flow from "@/features/account-opening-step2/AccountOpeningStep2Flow";
+import { resetStep2StateAtom } from '@/features/account-opening-step2/state';
+import ApplicationsScreen from "@/features/applications/ApplicationsScreen";
+import CustomerInfoScreen from "@/features/customer-info/CustomerInfoScreen";
 import AccountScreen from "@/features/initial-setup/screens/AccountScreen";
 import DoneScreen from "@/features/initial-setup/screens/DoneScreen";
 import IntroScreen from "@/features/initial-setup/screens/IntroScreen";
 import LoginScreen from "@/features/initial-setup/screens/LoginScreen";
 import PortfolioAssetsScreen from "@/features/portfolio-assets/PortfolioAssetsScreen";
+import TradeHistoryScreen from "@/features/trade-history/TradeHistoryScreen";
 import TopScreen from "@/features/initial-setup/screens/TopScreen";
 import VerifyScreen from "@/features/initial-setup/screens/VerifyScreen";
 import PersonalAccountOpeningFlow from "@/features/personal-account-opening/PersonalAccountOpeningFlow";
-
-type FlowScreen =
-  | SetupStep
-  | "top"
-  | "member-registration"
-  | "account-opening-step1"
-  | "account-opening-step1-confirmation"
-  | "account-opening-step2"
-  | "portfolio-assets";
+import type { PersonalAccountOpeningStep } from "@/features/personal-account-opening/model";
+import { resetPersonalAccountOpeningStateAtom } from '@/features/personal-account-opening/state';
 
 export default function InitialSetupFlow() {
-  const [step, setStep] = useState<FlowScreen>("login");
-  const [formState, setFormState] = useState(defaultFormState);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [verifyMessage, setVerifyMessage] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [formState, setFormState] = useAtom(initialSetupFormStateAtom);
+  const [errors, setErrors] = useAtom(initialSetupErrorsAtom);
+  const [verifyMessage, setVerifyMessage] = useAtom(initialSetupVerifyMessageAtom);
+  const resetInitialSetupState = useSetAtom(resetInitialSetupStateAtom);
+  const resetStep1State = useSetAtom(resetStep1StateAtom);
+  const resetStep2State = useSetAtom(resetStep2StateAtom);
+  const resetPersonalAccountOpeningState = useSetAtom(resetPersonalAccountOpeningStateAtom);
+  const step = getFlowScreenFromPathname(location.pathname);
+  const step1Screen: Step1Screen | null =
+    step === "accountOpeningStep1Intro"
+      ? "intro"
+      : step === "accountOpeningStep1ElectronicDelivery"
+        ? "electronic-delivery"
+        : step === "accountOpeningStep1DocumentsReview"
+          ? "documents-review"
+          : step === "accountOpeningStep1Confirmation"
+            ? "confirmation"
+            : null;
+  const memberRegistrationStep: PersonalAccountOpeningStep | null =
+    step === "memberRegistrationWelcome"
+      ? "welcome"
+      : step === "memberRegistrationIdentity"
+        ? "identity"
+        : step === "memberRegistrationContact"
+          ? "contact"
+          : step === "memberRegistrationSecurity"
+            ? "security"
+            : step === "memberRegistrationSent"
+              ? "sent"
+              : null;
 
   useEffect(() => {
+    if (!step) {
+      navigate(flowPaths.login, { replace: true });
+      return;
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [step]);
+  }, [navigate, step, location.pathname]);
 
   const updateField = <Key extends keyof FormState,>(
     key: Key,
@@ -48,14 +92,18 @@ export default function InitialSetupFlow() {
   };
 
   const handleStart = () => {
-    setStep("account");
+    navigate(flowPaths.account);
     setVerifyMessage("");
   };
 
   const resetSetupState = () => {
-    setFormState(defaultFormState);
-    setErrors({});
-    setVerifyMessage("");
+    resetInitialSetupState();
+  };
+
+  const resetApplicationFlows = () => {
+    resetStep1State();
+    resetStep2State();
+    resetPersonalAccountOpeningState();
   };
 
   const handleAccountSubmit = () => {
@@ -93,7 +141,7 @@ export default function InitialSetupFlow() {
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length === 0) {
-      setStep("verify");
+      navigate(flowPaths.verify);
       setVerifyMessage("");
       setFormState((current) => ({ ...current, code: "" }));
     }
@@ -110,7 +158,7 @@ export default function InitialSetupFlow() {
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length === 0) {
-      setStep("done");
+      navigate(flowPaths.done);
       setVerifyMessage("");
     }
   };
@@ -123,15 +171,20 @@ export default function InitialSetupFlow() {
 
   const handleBackToTop = () => {
     resetSetupState();
-    setStep("top");
+    navigate(flowPaths.top);
   };
 
   const handleLogout = () => {
     resetSetupState();
-    setStep("login");
+    resetApplicationFlows();
+    navigate(flowPaths.login);
   };
 
   const emailDisplay = formState.email.trim() || "user-input@example.com";
+
+  if (!step) {
+    return null;
+  }
 
   return (
     <>
@@ -139,55 +192,144 @@ export default function InitialSetupFlow() {
         <LoginScreen
           onLogin={() => {
             resetSetupState();
-            setStep("top");
+            resetApplicationFlows();
+            navigate(flowPaths.top);
+          }}
+          onStartMemberRegistration={() => {
+            resetSetupState();
+            resetPersonalAccountOpeningState();
+            navigate(flowPaths.memberRegistrationWelcome);
           }}
           onShowIntro={() => {
             resetSetupState();
-            setStep("intro");
+            navigate(flowPaths.intro);
           }}
         />
       ) : null}
       {step === "top" ? (
         <TopScreen
           onLogout={handleLogout}
-          onOpenPortfolioAssets={() => setStep("portfolio-assets")}
-          onStartPersonalAccountOpening={() => setStep("account-opening-step1")}
-          onStartMemberRegistration={() => setStep("member-registration")}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onStartPersonalAccountOpening={() => {
+            resetStep1State();
+            resetStep2State();
+            navigate(flowPaths.accountOpeningStep1Intro)
+          }}
         />
       ) : null}
-      {step === "portfolio-assets" ? (
-        <PortfolioAssetsScreen onBackToTop={() => setStep("top")} />
+      {step === "portfolioAssets" ? (
+        <PortfolioAssetsScreen
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+        />
       ) : null}
-      {step === "account-opening-step1" ||
-      step === "account-opening-step1-confirmation" ? (
-        <AccountOpeningStep1Flow
-          initialScreen={
-            step === "account-opening-step1-confirmation"
-              ? "confirmation"
-              : "intro"
+      {step === "tradeHistory" ? (
+        <TradeHistoryScreen
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
           }
+          onLogout={handleLogout}
+        />
+      ) : null}
+      {step === "applications" ? (
+        <ApplicationsScreen
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+        />
+      ) : null}
+      {step === "customerInfo" ? (
+        <CustomerInfoScreen
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+        />
+      ) : null}
+      {step1Screen ? (
+        <AccountOpeningStep1Flow
+          screen={step1Screen}
           initialState={
-            step === "account-opening-step1-confirmation"
+            step1Screen === "confirmation"
               ? completedStep1State
               : undefined
           }
-          onBackToTop={() => setStep("top")}
-          onProceedToStep2={() => setStep("account-opening-step2")}
+          onBackToTop={() => {
+            resetStep1State();
+            resetStep2State();
+            navigate(flowPaths.top);
+          }}
+          onProceedToStep2={() => {
+            resetStep2State();
+            navigate(flowPaths.accountOpeningStep2);
+          }}
+          onScreenChange={(nextScreen) => {
+            const nextPath =
+              nextScreen === "intro"
+                ? flowPaths.accountOpeningStep1Intro
+                : nextScreen === "electronic-delivery"
+                  ? flowPaths.accountOpeningStep1ElectronicDelivery
+                  : nextScreen === "documents-review"
+                    ? flowPaths.accountOpeningStep1DocumentsReview
+                    : flowPaths.accountOpeningStep1Confirmation;
+
+            navigate(nextPath);
+          }}
         />
       ) : null}
-      {step === "account-opening-step2" ? (
+      {step === "accountOpeningStep2" ? (
         <AccountOpeningStep2Flow
-          onBackToStep1={() => setStep("account-opening-step1-confirmation")}
+          onBackToStep1={() =>
+            navigate(flowPaths.accountOpeningStep1Confirmation)
+          }
         />
       ) : null}
-      {step === "member-registration" ? (
-        <PersonalAccountOpeningFlow onBackToTop={() => setStep("top")} />
+      {memberRegistrationStep ? (
+        <PersonalAccountOpeningFlow
+          onBackToLogin={() => {
+            resetPersonalAccountOpeningState();
+            navigate(flowPaths.login);
+          }}
+          onStepChange={(nextStep) => {
+            const nextPath =
+              nextStep === "welcome"
+                ? flowPaths.memberRegistrationWelcome
+                : nextStep === "identity"
+                  ? flowPaths.memberRegistrationIdentity
+                  : nextStep === "contact"
+                    ? flowPaths.memberRegistrationContact
+                    : nextStep === "security"
+                      ? flowPaths.memberRegistrationSecurity
+                      : flowPaths.memberRegistrationSent;
+
+            navigate(nextPath);
+          }}
+          step={memberRegistrationStep}
+        />
       ) : null}
       {step === "intro" ? (
         <IntroScreen
           onBack={() => {
             resetSetupState();
-            setStep("login");
+            navigate(flowPaths.login);
           }}
           onStart={handleStart}
         />
@@ -196,7 +338,7 @@ export default function InitialSetupFlow() {
         <AccountScreen
           errors={errors}
           formState={formState}
-          onBack={() => setStep("intro")}
+          onBack={() => navigate(flowPaths.intro)}
           onFieldChange={updateField}
           onSubmit={handleAccountSubmit}
         />
@@ -206,7 +348,7 @@ export default function InitialSetupFlow() {
           emailDisplay={emailDisplay}
           errors={errors}
           formState={formState}
-          onBack={() => setStep("account")}
+          onBack={() => navigate(flowPaths.account)}
           onFieldChange={updateField}
           onResend={handleResend}
           onSubmit={handleVerifySubmit}

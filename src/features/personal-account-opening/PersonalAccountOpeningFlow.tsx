@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useAtom } from 'jotai';
 
 import {
   defaultPersonalAccountOpeningFormState,
@@ -10,6 +11,12 @@ import {
   type PersonalAccountOpeningFormState,
   type PersonalAccountOpeningStep,
 } from "@/features/personal-account-opening/model";
+import {
+  personalAccountOpeningErrorsAtom,
+  personalAccountOpeningFormStateAtom,
+  personalAccountOpeningResendMessageAtom,
+  personalAccountOpeningStepAtom,
+} from '@/features/personal-account-opening/state';
 import ContactStep from "@/features/personal-account-opening/screens/ContactStep";
 import EmailSentStep from "@/features/personal-account-opening/screens/EmailSentStep";
 import IdentityStep from "@/features/personal-account-opening/screens/IdentityStep";
@@ -17,16 +24,35 @@ import SecurityStep from "@/features/personal-account-opening/screens/SecuritySt
 import WelcomeStep from "@/features/personal-account-opening/screens/WelcomeStep";
 
 type PersonalAccountOpeningFlowProps = {
-  onBackToTop: () => void;
+  onBackToLogin: () => void;
+  onStepChange?: (step: PersonalAccountOpeningStep) => void;
+  step?: PersonalAccountOpeningStep;
 };
 
 export default function PersonalAccountOpeningFlow({
-  onBackToTop,
+  onBackToLogin,
+  onStepChange,
+  step: controlledStep,
 }: PersonalAccountOpeningFlowProps) {
-  const [step, setStep] = useState<PersonalAccountOpeningStep>("welcome");
-  const [formState, setFormState] = useState(defaultPersonalAccountOpeningFormState);
-  const [errors, setErrors] = useState<PersonalAccountOpeningErrors>({});
-  const [resendMessage, setResendMessage] = useState("");
+  const [internalStep, setInternalStep] = useAtom(personalAccountOpeningStepAtom);
+  const [formState, setFormState] = useAtom(personalAccountOpeningFormStateAtom);
+  const [errors, setErrors] = useAtom(personalAccountOpeningErrorsAtom);
+  const [resendMessage, setResendMessage] = useAtom(personalAccountOpeningResendMessageAtom);
+  const step = controlledStep ?? internalStep;
+  const setStep = (nextStep: PersonalAccountOpeningStep) => {
+    if (controlledStep !== undefined) {
+      onStepChange?.(nextStep);
+      return;
+    }
+
+    setInternalStep(nextStep);
+  };
+
+  useEffect(() => {
+    if (controlledStep === undefined) {
+      setInternalStep("welcome");
+    }
+  }, [controlledStep, setInternalStep]);
 
   const updateField = <Key extends keyof PersonalAccountOpeningFormState>(
     key: Key,
@@ -162,7 +188,7 @@ export default function PersonalAccountOpeningFlow({
   };
 
   if (step === "welcome") {
-    return <WelcomeStep onBack={onBackToTop} onNext={() => setStep("identity")} />;
+    return <WelcomeStep onBack={onBackToLogin} onNext={() => setStep("identity")} />;
   }
 
   if (step === "identity") {
@@ -208,7 +234,7 @@ export default function PersonalAccountOpeningFlow({
       onResend={() => {
         setResendMessage("メールを再送信しました。受信ボックスをご確認ください。");
       }}
-      onReturnToTop={onBackToTop}
+      onReturnToLogin={onBackToLogin}
     />
   );
 }

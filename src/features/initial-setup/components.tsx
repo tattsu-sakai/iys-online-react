@@ -1,4 +1,4 @@
-import { type ComponentPropsWithoutRef, type ComponentType, type ReactNode } from 'react';
+import { type ComponentPropsWithoutRef, type ComponentType, type ReactNode, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,23 +27,23 @@ const stageMeta: Record<
   }
 > = {
   login: {
-    eyebrow: 'Secure Access',
+    eyebrow: '安全なログイン',
     summary: '口座情報で安全にログインしてTOP画面へ進めます。初回利用時は初期設定導線から登録を開始してください。',
   },
   intro: {
-    eyebrow: 'Flow Overview',
+    eyebrow: '初期設定のご案内',
     summary: '利用できる機能と、完了までの流れを確認してから初期設定を開始できます。',
   },
   account: {
-    eyebrow: 'Security Setup',
+    eyebrow: '安全設定',
     summary: 'ログインに使う新しいパスワードと、認証用メールアドレスを登録します。',
   },
   verify: {
-    eyebrow: 'Email Verification',
+    eyebrow: 'メール認証',
     summary: '登録したメールアドレスに届いた認証コードで、設定内容を確定します。',
   },
   done: {
-    eyebrow: 'Ready To Go',
+    eyebrow: 'ご利用開始',
     summary: '初期設定は完了です。これで いちよしオンライン の各機能をご利用いただけます。',
   },
 };
@@ -86,6 +86,90 @@ export function PhoneStatusBar() {
   );
 }
 
+export function ServiceScreenHeader({
+  actions,
+  children,
+  className,
+  containerClassName,
+}: {
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  containerClassName?: string;
+}) {
+  return (
+    <header
+      className={cn(
+        'relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-b border-[rgba(255,255,255,0.14)]',
+        className,
+      )}
+    >
+      <div className='absolute inset-0 bg-[linear-gradient(135deg,#2a3f4a_0%,#486371_54%,#8f7c63_100%)]' />
+      <div className='absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(12,27,36,0.12))]' />
+      <div className='pointer-events-none absolute -right-8 top-4 h-32 w-32 rounded-full bg-[rgba(255,255,255,0.1)] blur-3xl' />
+      <div className='pointer-events-none absolute left-10 top-10 h-24 w-24 rounded-full bg-[rgba(234,224,200,0.16)] blur-2xl' />
+
+      <div className={cn('relative mx-auto w-full max-w-[1180px] px-4 pb-6 pt-5 sm:px-6 sm:pb-7 xl:px-8 xl:pb-8 xl:pt-7', containerClassName)}>
+        <div className='flex items-start justify-between gap-4'>
+          {children}
+          {actions ? <div className='flex items-center gap-2'>{actions}</div> : null}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function ServiceScreenHeroPanel({
+  badge,
+  description,
+  icon,
+  pretitle,
+  title,
+}: {
+  badge: string;
+  description: ReactNode;
+  icon?: ReactNode;
+  pretitle?: ReactNode;
+  title: ReactNode;
+}) {
+  return (
+    <div className='max-w-[44rem] rounded-[16px] border border-white/10 bg-[rgba(24,35,46,0.18)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-md sm:p-5'>
+      <span className='inline-flex rounded-full border border-white/18 bg-white/14 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-white shadow-[0_8px_20px_rgba(0,0,0,0.16)] backdrop-blur'>
+        {badge}
+      </span>
+
+      {icon ? (
+        <div className='mt-4 flex items-center gap-3'>
+          <span className='flex h-12 w-12 items-center justify-center rounded-[12px] bg-white/12 text-white shadow-[0_16px_32px_rgba(0,0,0,0.16)] ring-1 ring-white/12'>
+            {icon}
+          </span>
+          <div>
+            {pretitle ? <div className='text-[14px] font-semibold tracking-[0.08em] text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.24)]'>{pretitle}</div> : null}
+            <h1 className='mt-1 text-[26px] font-bold leading-[1.25] tracking-[0.04em] text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.28)] sm:text-[32px]'>
+              {title}
+            </h1>
+          </div>
+        </div>
+      ) : (
+        <>
+          {pretitle ? (
+            <div className='mt-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.24)]'>
+              {pretitle}
+            </div>
+          ) : null}
+          <h1 className={cn('text-[26px] font-bold leading-[1.25] tracking-[0.04em] text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.28)] sm:text-[32px]', pretitle ? 'mt-3' : 'mt-4')}>
+            {title}
+          </h1>
+        </>
+      )}
+
+      <div className='mt-4 max-w-[40rem] text-[13px] leading-6 text-white/90 [text-shadow:0_1px_10px_rgba(0,0,0,0.22)] sm:text-[14px]'>
+        {description}
+      </div>
+    </div>
+  );
+}
+
 function DesktopFrameBar({ stage }: { stage: SetupStep }) {
   const currentIndex = flowSteps.findIndex((item) => item.key === stage);
   const showStepUi = stage !== 'login';
@@ -97,7 +181,7 @@ function DesktopFrameBar({ stage }: { stage: SetupStep }) {
         {showStepUi ? (
           <div className='flex items-center gap-3'>
             <span className='rounded-full bg-[rgba(162,133,86,0.12)] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--ichiyoshi-gold-soft)]'>
-              Step {currentIndex + 1}/{flowSteps.length}
+              手順 {currentIndex + 1}/{flowSteps.length}
             </span>
             <span className='text-[14px] font-semibold tracking-[0.04em] text-[var(--ichiyoshi-navy)]'>
               {flowSteps[currentIndex]?.label}
@@ -132,7 +216,7 @@ function AppHeader({ title, stage }: { title: string; stage: SetupStep }) {
           </span>
           {showStepUi ? (
             <span className='text-[10px] font-medium uppercase tracking-[0.2em] text-white/78 [text-shadow:0_1px_10px_rgba(0,0,0,0.24)]'>
-              Step {currentIndex + 1}/{flowSteps.length}
+              手順 {currentIndex + 1}/{flowSteps.length}
             </span>
           ) : null}
         </div>
@@ -160,13 +244,13 @@ function AppHeader({ title, stage }: { title: string; stage: SetupStep }) {
   );
 }
 
-function BrandFooter() {
+export function BrandFooter({ containerClassName }: { containerClassName?: string }) {
   return (
     <footer
       className='relative left-1/2 w-screen -translate-x-1/2 border-t border-white/70 bg-[linear-gradient(180deg,rgba(248,248,248,0.15),rgba(255,255,255,0.92))] text-center text-[12px] leading-[1.8] text-[var(--ichiyoshi-muted)] backdrop-blur xl:text-left'
       data-node-id='footer'
     >
-      <div className='mx-auto w-full max-w-[520px] px-5 py-6 xl:max-w-[980px] xl:px-8'>
+      <div className={cn('mx-auto w-full max-w-[520px] px-5 py-6 xl:max-w-[980px] xl:px-8', containerClassName)}>
         <BrandMark className='justify-center xl:justify-start' />
         <div className='mt-5 space-y-1'>
           {companyInfoLines.map((line) => (
@@ -232,52 +316,104 @@ export function QuickAccessBar({
   className?: string;
   containerClassName?: string;
 }) {
+  useEffect(() => {
+    document.body.classList.add('has-mobile-quick-access');
+
+    return () => {
+      document.body.classList.remove('has-mobile-quick-access');
+    };
+  }, []);
+
   return (
-    <section
-      className={cn(
-        'relative left-1/2 w-screen -translate-x-1/2 border-b border-[rgba(5,32,49,0.06)] bg-[rgba(255,255,255,0.72)] backdrop-blur',
-        className,
-      )}
-    >
-      <div
+    <>
+      <section
         className={cn(
-          'mx-auto w-full max-w-[520px] px-4 py-2 sm:px-6 xl:max-w-[980px] xl:px-8',
-          containerClassName,
+          'relative left-1/2 hidden w-screen -translate-x-1/2 border-b border-[rgba(5,32,49,0.06)] bg-[rgba(255,255,255,0.72)] backdrop-blur sm:block',
+          className,
         )}
       >
-        <div className='grid grid-cols-4 gap-1.5 sm:gap-2'>
-          {actions.map((action) => {
-            const Icon = action.icon;
+        <div
+          className={cn(
+            'mx-auto w-full max-w-[520px] px-4 py-2 sm:px-6 xl:max-w-[980px] xl:px-8',
+            containerClassName,
+          )}
+        >
+          <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+            {actions.map((action) => {
+              const Icon = action.icon;
+              const isDisabled = !action.onClick && !action.active;
 
-            return (
-              <button
-                key={action.label}
-                type='button'
-                onClick={action.onClick}
-                className={cn(
-                  'group flex min-h-[50px] items-center justify-center gap-1.5 rounded-[10px] border px-2 py-2 text-center shadow-[0_8px_18px_rgba(5,32,49,0.05)] transition-transform duration-200 hover:-translate-y-0.5 sm:min-h-[52px] sm:justify-start sm:px-3',
-                  action.active
-                    ? 'border-[rgba(111,91,59,0.2)] bg-[linear-gradient(135deg,#85683f_0%,#6f5b3b_55%,#59492f_100%)] text-white'
-                    : 'border-[rgba(5,32,49,0.08)] bg-white/92 text-[var(--ichiyoshi-navy)] hover:bg-white',
-                )}
-              >
-                <span
+              return (
+                <button
+                  key={action.label}
+                  type='button'
+                  onClick={action.onClick}
+                  disabled={isDisabled}
+                  aria-disabled={isDisabled}
                   className={cn(
-                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]',
+                    'group flex min-h-[64px] flex-col items-start justify-center gap-2 rounded-[12px] border px-3 py-3 text-left shadow-[0_8px_18px_rgba(5,32,49,0.05)] transition-transform duration-200 sm:min-h-[60px] sm:flex-row sm:items-center sm:justify-start',
                     action.active
-                      ? 'bg-white/14'
-                      : 'bg-[rgba(162,133,86,0.12)] text-[var(--ichiyoshi-gold-soft)]',
+                      ? 'border-[rgba(111,91,59,0.2)] bg-[linear-gradient(135deg,#85683f_0%,#6f5b3b_55%,#59492f_100%)] text-white'
+                      : isDisabled
+                        ? 'cursor-not-allowed border-[rgba(5,32,49,0.06)] bg-[rgba(5,32,49,0.04)] text-[var(--ichiyoshi-muted)] shadow-none'
+                        : 'border-[rgba(5,32,49,0.08)] bg-white/92 text-[var(--ichiyoshi-navy)] hover:-translate-y-0.5 hover:bg-white',
                   )}
                 >
-                  <Icon className='h-3.5 w-3.5' />
-                </span>
-                <span className='truncate text-[10px] font-bold leading-[1.2] tracking-[0.02em] sm:text-[11px]'>{action.label}</span>
-              </button>
-            );
-          })}
+                  <span
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]',
+                      action.active
+                        ? 'bg-white/14'
+                        : isDisabled
+                          ? 'bg-[rgba(5,32,49,0.05)] text-[var(--ichiyoshi-muted)]'
+                          : 'bg-[rgba(162,133,86,0.12)] text-[var(--ichiyoshi-gold-soft)]',
+                    )}
+                  >
+                    <Icon className='h-4 w-4' />
+                  </span>
+                  <span className='flex min-w-0 flex-1 flex-col'>
+                    <span className='truncate text-[13px] font-bold leading-[1.3] tracking-[0.02em] sm:text-[12px]'>{action.label}</span>
+                    {isDisabled ? <span className='mt-0.5 text-[10px] font-semibold tracking-[0.04em] text-[var(--ichiyoshi-muted)]'>準備中</span> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className='fixed inset-x-0 bottom-0 z-50 border-t border-[rgba(5,32,49,0.12)] bg-[rgba(255,255,255,0.9)] backdrop-blur-md sm:hidden'>
+        <div className='mx-auto w-full max-w-[520px] px-2 pb-2 pt-2' style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}>
+          <div className='grid grid-cols-4 gap-1.5'>
+            {actions.map((action) => {
+              const Icon = action.icon;
+              const isDisabled = !action.onClick && !action.active;
+
+              return (
+                <button
+                  key={`mobile-${action.label}`}
+                  type='button'
+                  onClick={action.onClick}
+                  disabled={isDisabled}
+                  aria-disabled={isDisabled}
+                  className={cn(
+                    'flex min-h-[62px] flex-col items-center justify-center gap-1 rounded-[10px] border px-1.5 py-2 text-center transition-colors duration-200',
+                    action.active
+                      ? 'border-[rgba(111,91,59,0.2)] bg-[linear-gradient(135deg,#85683f_0%,#6f5b3b_55%,#59492f_100%)] text-white'
+                      : isDisabled
+                        ? 'cursor-not-allowed border-[rgba(5,32,49,0.06)] bg-[rgba(5,32,49,0.04)] text-[var(--ichiyoshi-muted)]'
+                        : 'border-[rgba(5,32,49,0.08)] bg-white text-[var(--ichiyoshi-navy)]',
+                  )}
+                >
+                  <Icon className='h-4 w-4' />
+                  <span className='text-[11px] font-bold leading-[1.2] tracking-[0.02em]'>{action.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 

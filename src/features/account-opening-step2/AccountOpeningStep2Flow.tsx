@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAtom } from 'jotai';
 
 import {
   canSearchTown,
-  defaultStep2AddressState,
   formatPostalCodeInput,
   type ResidencyCountry,
 } from "@/features/account-opening-step2/model";
+import { step2AddressStateAtom, step2TownDialogOpenAtom } from '@/features/account-opening-step2/state';
 import Step2AddressScreen from "@/features/account-opening-step2/screens/Step2AddressScreen";
 
 type AccountOpeningStep2FlowProps = {
@@ -15,8 +16,8 @@ type AccountOpeningStep2FlowProps = {
 export default function AccountOpeningStep2Flow({
   onBackToStep1,
 }: AccountOpeningStep2FlowProps) {
-  const [state, setState] = useState(defaultStep2AddressState);
-  const [isTownDialogOpen, setIsTownDialogOpen] = useState(false);
+  const [state, setState] = useAtom(step2AddressStateAtom);
+  const [isTownDialogOpen, setIsTownDialogOpen] = useAtom(step2TownDialogOpenAtom);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
