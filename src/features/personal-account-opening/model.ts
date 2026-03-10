@@ -111,7 +111,7 @@ export const isEmailValid = (value: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 export const isKanaValid = (value: string) =>
-  /^[ァ-ヶー\s　]+$/.test(value.trim());
+  /^[ァ-ヶー\s\u3000]+$/.test(value.trim());
 
 const countPasswordCategories = (value: string) => {
   const categories = [

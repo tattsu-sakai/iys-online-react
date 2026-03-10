@@ -1,20 +1,18 @@
-import { type ComponentType, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  FileText,
   History,
   Info,
-  Landmark,
   Menu,
   Search,
-  User,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import ImportantInfoPanel from '@/components/ui/important-info-panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   BrandFooter,
@@ -25,7 +23,9 @@ import {
   ServiceScreenHeroPanel,
 } from '@/features/initial-setup/components';
 import AppNavigationMenu from '@/features/navigation/AppNavigationMenu';
+import { createQuickAccessItems } from '@/features/navigation/quick-access';
 import type { AssetTabKey } from '@/features/portfolio-assets/model';
+import { trackAuditEvent } from '@/features/security/audit';
 import TradeHistorySearchModal from '@/features/trade-history/TradeHistorySearchModal';
 import {
   defaultTradeHistoryFilters,
@@ -43,6 +43,8 @@ import {
   type TransactionCategoryKey,
 } from '@/features/trade-history/model';
 import { useSimulatedLoading } from '@/hooks/use-simulated-loading';
+import { apiClient } from '@/lib/api/mock-client';
+import type { TradeHistoryFilterPreset } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
 type TradeHistoryScreenProps = {
@@ -52,16 +54,6 @@ type TradeHistoryScreenProps = {
   onOpenPortfolioAssets: (tab?: AssetTabKey) => void;
   onLogout: () => void;
 };
-
-const quickActions: Array<{
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-}> = [
-  { label: '預り資産', icon: Landmark },
-  { label: '取引履歴', icon: History },
-  { label: 'お客様情報', icon: User },
-  { label: '各種申込み', icon: FileText },
-];
 
 const pageSize = 5;
 const referenceDate = new Date('2025-01-31T00:00:00');
@@ -260,6 +252,8 @@ export default function TradeHistoryScreen({
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<TradeHistoryFilters>(getInitialFilters(searchParams));
+  const [savedPresets, setSavedPresets] = useState<TradeHistoryFilterPreset[]>([]);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState('');
 
   const periodParam = searchParams.get('period');
   const period = isHistoryPeriodKey(periodParam) ? periodParam : defaultPeriod;
@@ -301,6 +295,17 @@ export default function TradeHistoryScreen({
   }, [currentPage, filters.account, filters.product, filters.transaction, period]);
 
   useEffect(() => {
+    void apiClient.tradeHistory
+      .listFilterPresets()
+      .then((presets) => setSavedPresets(presets))
+      .catch(() => setSavedPresets([]));
+    void apiClient.tradeHistory
+      .getLastUpdatedAt()
+      .then((value) => setLastUpdatedAt(new Date(value).toLocaleString('ja-JP')))
+      .catch(() => setLastUpdatedAt(''));
+  }, []);
+
+  useEffect(() => {
     if (requestedPage === currentPage) {
       return;
     }
@@ -310,18 +315,14 @@ export default function TradeHistoryScreen({
     setSearchParams(nextParams, { replace: true });
   }, [currentPage, requestedPage, searchParams, setSearchParams]);
 
-  const quickAccessItems = quickActions.map((action) => ({
-    ...action,
-    active: action.label === '取引履歴',
-    onClick:
-      action.label === '預り資産'
-        ? () => onOpenPortfolioAssets()
-        : action.label === 'お客様情報'
-          ? onOpenCustomerInfo
-          : action.label === '各種申込み'
-            ? onOpenApplications
-            : undefined,
-  }));
+  const quickAccessItems = createQuickAccessItems({
+    activeKey: 'tradeHistory',
+    handlers: {
+      applications: onOpenApplications,
+      customerInfo: onOpenCustomerInfo,
+      portfolioAssets: () => onOpenPortfolioAssets(),
+    },
+  });
 
   const activeFilterChips = [
     filters.product !== 'allExceptMrf' ? `商品区分: ${productLabel}` : null,
@@ -349,6 +350,39 @@ export default function TradeHistoryScreen({
     nextParams.set('account', draftFilters.account);
     setSearchParams(nextParams, { replace: true });
     setSearchModalOpen(false);
+  };
+
+  const handleSaveCurrentPreset = async () => {
+    const presetLabel = `${periodLabel} / ${productLabel}`;
+    const saved = await apiClient.tradeHistory.saveFilterPreset({
+      account: filters.account,
+      label: presetLabel,
+      period,
+      product: filters.product,
+      transaction: filters.transaction,
+    });
+    setSavedPresets((current) => [saved, ...current.filter((item) => item.id !== saved.id)].slice(0, 6));
+    await trackAuditEvent({
+      actorType: 'authenticated_user',
+      eventType: 'trade_history_filter_preset_saved',
+      maskedPayload: {
+        account: saved.account,
+        period: saved.period,
+        product: saved.product,
+        transaction: saved.transaction,
+      },
+      screen: 'tradeHistory',
+    });
+  };
+
+  const handleApplyPreset = (preset: TradeHistoryFilterPreset) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', '1');
+    nextParams.set('period', preset.period);
+    nextParams.set('product', preset.product);
+    nextParams.set('transaction', preset.transaction);
+    nextParams.set('account', preset.account);
+    setSearchParams(nextParams, { replace: true });
   };
 
   const handlePageChange = (nextPage: number) => {
@@ -444,15 +478,27 @@ export default function TradeHistoryScreen({
                             期間をすぐ切り替えられます。より細かく条件を指定したい場合は詳細検索を使います。
                           </p>
                         </div>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          onClick={handleOpenSearchModal}
-                          className='h-12 rounded-[12px] border-[rgba(33,33,33,0.08)] bg-white px-5 text-[15px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-gold-soft)] shadow-[0_10px_26px_rgba(13,10,44,0.08)] hover:bg-[rgba(111,91,59,0.04)]'
-                        >
-                          <Search className='h-4 w-4' />
-                          詳細検索
-                        </Button>
+                        <div className='grid w-full gap-2 sm:w-auto sm:grid-cols-2'>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            onClick={handleOpenSearchModal}
+                            className='h-12 rounded-[12px] border-[rgba(33,33,33,0.08)] bg-white px-5 text-[15px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-gold-soft)] shadow-[0_10px_26px_rgba(13,10,44,0.08)] hover:bg-[rgba(111,91,59,0.04)]'
+                          >
+                            <Search className='h-4 w-4' />
+                            詳細検索
+                          </Button>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            onClick={() => {
+                              void handleSaveCurrentPreset();
+                            }}
+                            className='h-12 rounded-[12px] border-[rgba(33,33,33,0.08)] bg-white px-5 text-[15px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-navy)] shadow-[0_10px_26px_rgba(13,10,44,0.08)] hover:bg-[rgba(5,32,49,0.04)]'
+                          >
+                            条件を保存
+                          </Button>
+                        </div>
                       </div>
 
                       <div className='grid gap-2 sm:grid-cols-4'>
@@ -483,6 +529,26 @@ export default function TradeHistoryScreen({
                               {chip}
                             </span>
                           ))}
+                        </div>
+                      ) : null}
+
+                      {savedPresets.length > 0 ? (
+                        <div className='space-y-2 border-t border-[rgba(5,32,49,0.06)] pt-4'>
+                          <p className='text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--ichiyoshi-gold-soft)]'>
+                            保存した条件
+                          </p>
+                          <div className='flex flex-wrap gap-2'>
+                            {savedPresets.map((preset) => (
+                              <button
+                                key={preset.id}
+                                type='button'
+                                onClick={() => handleApplyPreset(preset)}
+                                className='rounded-full border border-[rgba(5,32,49,0.08)] bg-[rgba(5,32,49,0.03)] px-3 py-1.5 text-[12px] font-semibold tracking-[0.04em] text-[var(--ichiyoshi-navy)] transition-colors hover:bg-white'
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       ) : null}
                     </ContentCard>
@@ -632,17 +698,17 @@ export default function TradeHistoryScreen({
                         )}
                       </ContentCard>
 
-                      <ContentCard className='space-y-4'>
-                        <div>
-                          <p className='text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--ichiyoshi-gold-soft)]'>確認のポイント</p>
-                          <h2 className='mt-2 text-[18px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-navy)]'>迷いやすい項目</h2>
-                        </div>
-                        <div className='space-y-3 text-[14px] leading-7 text-[var(--ichiyoshi-ink-soft)]'>
-                          <p>詳細検索では、商品区分、取引区分、預り区分をまとめて指定できます。</p>
-                          <p>カードを押すと、単価や手数料までその場で確認できます。</p>
-                          <p>一覧の内容は前営業日までのデータをもとに表示しています。</p>
-                        </div>
-                      </ContentCard>
+                      <ImportantInfoPanel
+                        notes={[
+                          '詳細検索では、商品区分・取引区分・預り区分をまとめて指定できます。',
+                          'カードを押すと、単価や手数料までその場で確認できます。',
+                          '一覧の内容は前営業日までのデータを基準に表示しています。',
+                        ]}
+                        referenceDate='前営業日基準'
+                        reflectionTiming='当日夜間バッチ反映'
+                        title='表示内容に関する重要事項'
+                        updatedAt={lastUpdatedAt || undefined}
+                      />
                     </div>
                   </div>
                 </div>

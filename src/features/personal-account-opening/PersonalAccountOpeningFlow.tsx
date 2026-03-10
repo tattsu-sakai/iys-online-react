@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useAtom } from 'jotai';
 
 import {
-  defaultPersonalAccountOpeningFormState,
   isEmailValid,
   isKanaValid,
   isPasswordValid,

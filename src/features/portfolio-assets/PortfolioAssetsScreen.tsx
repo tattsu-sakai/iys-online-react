@@ -1,9 +1,10 @@
 import { type ComponentType, useEffect, useMemo, useState } from 'react';
-import { ChartPie, FileText, Handshake, History, Landmark, Menu, Sparkles, TrendingUp, User, Wallet } from 'lucide-react';
+import { ChartPie, Handshake, Landmark, Menu, Sparkles, TrendingUp, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { BrandFooter, QuickAccessBar, ServiceScreenHeader, ServiceScreenHeroPanel } from '@/features/initial-setup/components';
 import AppNavigationMenu from '@/features/navigation/AppNavigationMenu';
+import { createQuickAccessItems } from '@/features/navigation/quick-access';
 import AssetTabsCard from '@/features/portfolio-assets/components/AssetTabsCard';
 import DisplayNotesCard from '@/features/portfolio-assets/components/DisplayNotesCard';
 import DomesticPaginationCard from '@/features/portfolio-assets/components/DomesticPaginationCard';
@@ -37,16 +38,6 @@ type PortfolioAssetsScreenProps = {
   onOpenTradeHistory: () => void;
   onLogout: () => void;
 };
-
-const quickActions: Array<{
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-}> = [
-  { label: '預り資産', icon: Landmark },
-  { label: '取引履歴', icon: History },
-  { label: 'お客様情報', icon: User },
-  { label: '各種申込み', icon: FileText },
-];
 
 const tabIcons: Record<AssetTabKey, ComponentType<{ className?: string }>> = {
   bond: Landmark,
@@ -85,7 +76,10 @@ export default function PortfolioAssetsScreen({
     setCurrentPage(0);
   }, [activeTab]);
 
-  const currentDomesticSections = activeTab === 'equity' ? (domesticEquityPages[currentPage]?.sections ?? []) : [];
+  const currentDomesticSections = useMemo(
+    () => (activeTab === 'equity' ? (domesticEquityPages[currentPage]?.sections ?? []) : []),
+    [activeTab, currentPage],
+  );
   const currentDetailedPages = isDetailedAssetTabKey(activeTab) ? detailedHoldingsPagesByTab[activeTab] : null;
   const currentDetailedCategories = currentDetailedPages?.[currentPage]?.categories ?? [];
 
@@ -159,18 +153,14 @@ export default function PortfolioAssetsScreen({
   const allDomesticDetailsOpen = domesticHoldingIds.length > 0 && domesticExpandedCount === domesticHoldingIds.length;
   const allForeignDetailsOpen = foreignHoldingIds.length > 0 && foreignExpandedCount === foreignHoldingIds.length;
   const notesContent = displayNotesByTab[activeTab];
-  const quickAccessItems = quickActions.map((action) => ({
-    ...action,
-    active: action.label === '預り資産',
-    onClick:
-      action.label === '取引履歴'
-        ? onOpenTradeHistory
-        : action.label === 'お客様情報'
-          ? onOpenCustomerInfo
-          : action.label === '各種申込み'
-            ? onOpenApplications
-            : undefined,
-  }));
+  const quickAccessItems = createQuickAccessItems({
+    activeKey: 'portfolioAssets',
+    handlers: {
+      applications: onOpenApplications,
+      customerInfo: onOpenCustomerInfo,
+      tradeHistory: onOpenTradeHistory,
+    },
+  });
 
   const handleToggleHoldingDetails = (itemId: string) => {
     setExpandedHoldingIds((current) => ({

@@ -1,14 +1,18 @@
-import { type ComponentType, useRef, useState } from 'react';
-import { Bell, FileText, History, Landmark, LogOut, Menu, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, LogOut, Menu } from 'lucide-react';
 
+import ImportantInfoPanel from '@/components/ui/important-info-panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BrandFooter, QuickAccessBar, ServiceScreenHeader, ServiceScreenHeroPanel } from '@/features/initial-setup/components';
 import AppNavigationMenu from '@/features/navigation/AppNavigationMenu';
+import { createQuickAccessItems } from '@/features/navigation/quick-access';
 import type { AssetTabKey } from '@/features/portfolio-assets/model';
 import NewsCard from '@/features/top-screen/NewsCard';
 import OnlineApplicationsCard from '@/features/top-screen/OnlineApplicationsCard';
 import PortfolioSummaryCard from '@/features/top-screen/PortfolioSummaryCard';
+import { topNotes } from '@/features/top-screen/model';
 import { useSimulatedLoading } from '@/hooks/use-simulated-loading';
+import { apiClient } from '@/lib/api/mock-client';
 
 type TopScreenProps = {
   onLogout: () => void;
@@ -19,16 +23,6 @@ type TopScreenProps = {
   onStartPersonalAccountOpening: () => void;
 };
 
-const quickActions: Array<{
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-}> = [
-  { label: '預り資産', icon: Landmark },
-  { label: '取引履歴', icon: History },
-  { label: 'お客様情報', icon: User },
-  { label: '各種申込み', icon: FileText },
-];
-
 export default function TopScreen({
   onLogout,
   onOpenApplications,
@@ -38,8 +32,15 @@ export default function TopScreen({
   onStartPersonalAccountOpening,
 }: TopScreenProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState('');
   const newsCardRef = useRef<HTMLDivElement>(null);
   const isDashboardLoading = useSimulatedLoading('top-dashboard');
+  useEffect(() => {
+    void apiClient.tradeHistory
+      .getLastUpdatedAt()
+      .then((value) => setLastUpdatedAt(new Date(value).toLocaleString('ja-JP')))
+      .catch(() => setLastUpdatedAt(''));
+  }, []);
   const getQuickActionHandler = (label: string) => {
     if (label === '預り資産') {
       return () => onOpenPortfolioAssets();
@@ -59,10 +60,14 @@ export default function TopScreen({
 
     return undefined;
   };
-  const quickAccessItems = quickActions.map((action) => ({
-    ...action,
-    onClick: getQuickActionHandler(action.label),
-  }));
+  const quickAccessItems = createQuickAccessItems({
+    handlers: {
+      applications: getQuickActionHandler('各種申込み'),
+      customerInfo: getQuickActionHandler('お客様情報'),
+      portfolioAssets: getQuickActionHandler('預り資産'),
+      tradeHistory: getQuickActionHandler('取引履歴'),
+    },
+  });
 
   return (
     <main className='min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(162,133,86,0.18),transparent_24%),radial-gradient(circle_at_90%_10%,rgba(5,32,49,0.16),transparent_20%),linear-gradient(180deg,#f7f3eb_0%,#eef2f4_34%,#e6ebee_100%)]'>
@@ -124,6 +129,15 @@ export default function TopScreen({
                   </div>
                   <div>
                     <OnlineApplicationsCard onStartPersonalAccountOpening={onStartPersonalAccountOpening} />
+                  </div>
+                  <div className='xl:col-span-2'>
+                    <ImportantInfoPanel
+                      notes={topNotes}
+                      referenceDate='前営業日約定基準'
+                      reflectionTiming='翌営業日 06:00 反映'
+                      title='表示内容に関する重要なお知らせ'
+                      updatedAt={lastUpdatedAt || undefined}
+                    />
                   </div>
                 </div>
               </div>

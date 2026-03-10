@@ -349,7 +349,10 @@ export function QuickAccessBar({
                   type='button'
                   onClick={action.onClick}
                   disabled={isDisabled}
+                  aria-current={action.active ? 'page' : undefined}
                   aria-disabled={isDisabled}
+                  aria-label={action.active ? `${action.label}（現在表示中）` : `${action.label}へ移動`}
+                  title={action.active ? `${action.label}（現在表示中）` : `${action.label}へ移動`}
                   className={cn(
                     'group flex min-h-[64px] flex-col items-start justify-center gap-2 rounded-[12px] border px-3 py-3 text-left shadow-[0_8px_18px_rgba(5,32,49,0.05)] transition-transform duration-200 sm:min-h-[60px] sm:flex-row sm:items-center sm:justify-start',
                     action.active
@@ -395,9 +398,12 @@ export function QuickAccessBar({
                   type='button'
                   onClick={action.onClick}
                   disabled={isDisabled}
+                  aria-current={action.active ? 'page' : undefined}
                   aria-disabled={isDisabled}
+                  aria-label={action.active ? `${action.label}（現在表示中）` : `${action.label}へ移動`}
+                  title={action.active ? `${action.label}へ移動` : `${action.label}へ移動`}
                   className={cn(
-                    'flex min-h-[62px] flex-col items-center justify-center gap-1 rounded-[10px] border px-1.5 py-2 text-center transition-colors duration-200',
+                    'flex min-h-[66px] flex-col items-center justify-center gap-1 rounded-[10px] border px-1.5 py-2 text-center transition-colors duration-200',
                     action.active
                       ? 'border-[rgba(111,91,59,0.2)] bg-[linear-gradient(135deg,#85683f_0%,#6f5b3b_55%,#59492f_100%)] text-white'
                       : isDisabled

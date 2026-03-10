@@ -33,6 +33,17 @@ export default function ContactStep({
   onFieldChange,
   onNext,
 }: ContactStepProps) {
+  const mobilePhoneKeys: Array<'mobilePhone1' | 'mobilePhone2' | 'mobilePhone3'> = [
+    'mobilePhone1',
+    'mobilePhone2',
+    'mobilePhone3',
+  ];
+  const homePhoneKeys: Array<'homePhone1' | 'homePhone2' | 'homePhone3'> = [
+    'homePhone1',
+    'homePhone2',
+    'homePhone3',
+  ];
+
   return (
     <AccountOpeningShell
       description="電話番号とメールアドレスを登録します。連絡先情報は、会員登録確認用 URL の送信にも使用されます。"
@@ -62,7 +73,7 @@ export default function ContactStep({
               formState.mobilePhone3,
             ]}
             onChange={(index, value) => {
-              const key = ["mobilePhone1", "mobilePhone2", "mobilePhone3"][index] as const;
+              const key = mobilePhoneKeys[index] ?? 'mobilePhone1';
               const maxLength = index === 0 ? 4 : 4;
               onFieldChange(key, value.slice(0, maxLength));
             }}
@@ -74,7 +85,7 @@ export default function ContactStep({
             placeholders={["例：0120", "123", "456"]}
             values={[formState.homePhone1, formState.homePhone2, formState.homePhone3]}
             onChange={(index, value) => {
-              const key = ["homePhone1", "homePhone2", "homePhone3"][index] as const;
+              const key = homePhoneKeys[index] ?? 'homePhone1';
               onFieldChange(key, value);
             }}
           />

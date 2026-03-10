@@ -25,7 +25,6 @@ import {
   type ResidencyCountry,
   type Step2AddressState,
 } from '@/features/account-opening-step2/model';
-import { cn } from '@/lib/utils';
 
 type Step2AddressScreenProps = {
   canSearchTown: boolean;

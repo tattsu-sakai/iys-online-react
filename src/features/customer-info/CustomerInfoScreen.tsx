@@ -1,5 +1,5 @@
 import { type ComponentType, useState } from 'react';
-import { ChevronRight, FileText, History, Landmark, MapPin, Menu, Settings2, User } from 'lucide-react';
+import { ChevronRight, FileText, Landmark, MapPin, Menu, Settings2, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -11,14 +11,18 @@ import {
   ServiceScreenHeroPanel,
 } from '@/features/initial-setup/components';
 import AppNavigationMenu from '@/features/navigation/AppNavigationMenu';
+import { createQuickAccessItems } from '@/features/navigation/quick-access';
 import { customerInfoActions } from '@/features/customer-info/model';
 import type { AssetTabKey } from '@/features/portfolio-assets/model';
 import { cn } from '@/lib/utils';
 
 type CustomerInfoScreenProps = {
+  onOpenAddressChange: () => void;
   onOpenApplications: () => void;
   onBackToTop: () => void;
+  onOpenBankChange: () => void;
   onLogout: () => void;
+  onOpenNameChange: () => void;
   onOpenPortfolioAssets: (tab?: AssetTabKey) => void;
   onOpenTradeHistory: () => void;
 };
@@ -31,40 +35,25 @@ const actionIcons: Record<(typeof customerInfoActions)[number]['key'], Component
   'specified-account': FileText,
 };
 
-const quickActions = [
-  { label: '預り資産', icon: Landmark },
-  { label: '取引履歴', icon: History },
-  { label: 'お客様情報', icon: User },
-  { label: '各種申込み', icon: FileText },
-] as const;
-
 export default function CustomerInfoScreen({
+  onOpenAddressChange,
   onOpenApplications,
   onBackToTop,
+  onOpenBankChange,
   onLogout,
+  onOpenNameChange,
   onOpenPortfolioAssets,
   onOpenTradeHistory,
 }: CustomerInfoScreenProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const quickAccessItems = quickActions.map((action) => ({
-    ...action,
-    active: action.label === 'お客様情報',
-    onClick:
-      action.label === '預り資産'
-        ? () => onOpenPortfolioAssets()
-        : action.label === '取引履歴'
-          ? onOpenTradeHistory
-          : undefined,
-  }));
-  const enhancedQuickAccessItems = quickAccessItems.map((action) => ({
-    ...action,
-    onClick:
-      action.label === '各種申込み'
-        ? onOpenApplications
-        : action.label === '預り資産'
-          ? () => onOpenPortfolioAssets()
-          : action.onClick,
-  }));
+  const quickAccessItems = createQuickAccessItems({
+    activeKey: 'customerInfo',
+    handlers: {
+      applications: onOpenApplications,
+      portfolioAssets: () => onOpenPortfolioAssets(),
+      tradeHistory: onOpenTradeHistory,
+    },
+  });
 
   return (
     <main className='min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(162,133,86,0.18),transparent_24%),radial-gradient(circle_at_90%_10%,rgba(5,32,49,0.16),transparent_20%),linear-gradient(180deg,#f7f3eb_0%,#eef2f4_34%,#e6ebee_100%)]'>
@@ -105,7 +94,7 @@ export default function CustomerInfoScreen({
                 />
               </ServiceScreenHeader>
 
-              <QuickAccessBar actions={enhancedQuickAccessItems} containerClassName='max-w-[1180px] xl:max-w-[1180px]' />
+              <QuickAccessBar actions={quickAccessItems} containerClassName='max-w-[1180px] xl:max-w-[1180px]' />
 
               <div className='px-4 pb-8 pt-6 sm:px-6 xl:px-8 xl:pb-10 xl:pt-8'>
                 <div className='grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
@@ -126,12 +115,28 @@ export default function CustomerInfoScreen({
                       <div className='grid gap-4 md:grid-cols-2'>
                         {customerInfoActions.map((action, index) => {
                           const Icon = actionIcons[action.key];
+                          const isInteractiveAction = action.key === 'name' || action.key === 'address' || action.key === 'bank';
+                          const actionHandler =
+                            action.key === 'name'
+                              ? onOpenNameChange
+                              : action.key === 'address'
+                                ? onOpenAddressChange
+                                : action.key === 'bank'
+                                  ? onOpenBankChange
+                                  : undefined;
 
                           return (
-                            <article
+                            <button
                               key={action.key}
+                              type='button'
+                              onClick={actionHandler}
+                              disabled={!isInteractiveAction}
+                              aria-disabled={!isInteractiveAction}
                               className={cn(
-                                'flex h-full flex-col rounded-[14px] border border-[rgba(5,32,49,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,248,249,0.94))] p-5 shadow-[0_14px_32px_rgba(5,32,49,0.06)] transition-transform duration-200 hover:-translate-y-0.5',
+                                'flex h-full flex-col rounded-[14px] border border-[rgba(5,32,49,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,248,249,0.94))] p-5 text-left shadow-[0_14px_32px_rgba(5,32,49,0.06)] transition-transform duration-200',
+                                isInteractiveAction
+                                  ? 'hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(111,91,59,0.32)]'
+                                  : 'cursor-not-allowed opacity-70',
                                 index === customerInfoActions.length - 1 && 'md:col-span-2',
                               )}
                             >
@@ -140,7 +145,7 @@ export default function CustomerInfoScreen({
                                   <Icon className='h-5 w-5' />
                                 </span>
                                 <span className='inline-flex shrink-0 self-start items-center justify-center rounded-full border border-[rgba(5,32,49,0.08)] bg-white/88 px-3 py-1 text-[11px] font-semibold uppercase leading-none tracking-[0.14em] text-[var(--ichiyoshi-ink-soft)] whitespace-nowrap'>
-                                  オンライン
+                                  {isInteractiveAction ? 'オンライン' : '準備中'}
                                 </span>
                               </div>
 
@@ -149,13 +154,13 @@ export default function CustomerInfoScreen({
 
                               <div className='mt-auto flex items-center justify-between pt-5'>
                                 <span className='text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--ichiyoshi-gold-soft)]'>
-                                  申請内容を確認
+                                  {isInteractiveAction ? '申請内容を確認' : '順次対応予定'}
                                 </span>
                                 <span className='flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(5,32,49,0.05)] text-[var(--ichiyoshi-navy)]'>
                                   <ChevronRight className='h-4 w-4' />
                                 </span>
                               </div>
-                            </article>
+                            </button>
                           );
                         })}
                       </div>

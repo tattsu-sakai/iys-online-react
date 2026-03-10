@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
@@ -26,5 +26,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       'react-is': fileURLToPath(new URL('./src/shims/react-is.ts', import.meta.url)),
     },
+  },
+  test: {
+    environment: 'node',
+    globals: true,
   },
 });

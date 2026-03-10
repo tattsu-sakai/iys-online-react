@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 
+import FormErrorSummary from '@/components/ui/form-error-summary';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -12,6 +15,11 @@ import {
   SectionLabel,
   TextField,
 } from '@/features/initial-setup/components';
+import { apiClient } from '@/lib/api/mock-client';
+import { flattenFieldErrors, findFirstErrorField } from '@/lib/validation/form-schema';
+import { defaultLoginFormValues, loginFormSchema, type LoginFormValues } from '@/lib/validation/login-schema';
+import { createMaskedPayload, maskAccountNumber, maskLoginId, normalizeDigits, preventSensitivePaste } from '@/features/security/pii';
+import { trackAuditEvent } from '@/features/security/audit';
 
 type LoginScreenProps = {
   onLogin: () => void;
@@ -19,25 +27,35 @@ type LoginScreenProps = {
   onShowIntro: () => void;
 };
 
-type LoginMethod = 'login-id' | 'account';
-type LoginErrors = {
-  accountNumber?: string;
-  accountPassword?: string;
-  branchNumber?: string;
-  form?: string;
-  loginId?: string;
-  loginIdPassword?: string;
-};
+type LoginMethod = LoginFormValues['loginMethod'];
+type LoginFormFieldKey = Exclude<keyof LoginFormValues, 'loginMethod'>;
 
 export default function LoginScreen({ onLogin, onStartMemberRegistration, onShowIntro }: LoginScreenProps) {
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>('login-id');
-  const [loginId, setLoginId] = useState('');
-  const [loginIdPassword, setLoginIdPassword] = useState('');
-  const [branchNumber, setBranchNumber] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountPassword, setAccountPassword] = useState('');
-  const [errors, setErrors] = useState<LoginErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+  const {
+    clearErrors,
+    formState: { errors, isSubmitting, submitCount },
+    handleSubmit,
+    setFocus,
+    setValue,
+    watch,
+  } = useForm<LoginFormValues>({
+    defaultValues: defaultLoginFormValues,
+    mode: 'onSubmit',
+    resolver: zodResolver(loginFormSchema),
+  });
+
+  const loginMethod = watch('loginMethod');
+  const formErrorMessages = flattenFieldErrors(errors);
+  const firstErrorField = findFirstErrorField(errors);
+
+  useEffect(() => {
+    if (submitCount === 0 || !firstErrorField) {
+      return;
+    }
+
+    setFocus(firstErrorField);
+  }, [firstErrorField, setFocus, submitCount]);
 
   const passwordToggle = (
     <button
@@ -50,44 +68,56 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
     </button>
   );
 
-  const clearError = (field: keyof LoginErrors) => {
-    setErrors((current) => ({ ...current, [field]: undefined, form: undefined }));
+  const currentPasswordField = loginMethod === 'login-id' ? 'loginIdPassword' : 'accountPassword';
+  const loginIdValue = watch('loginId');
+  const accountNumberValue = watch('accountNumber');
+  const branchNumberValue = watch('branchNumber');
+
+  const glossaryNotes = useMemo(
+    () => [
+      'ログインID: 会員登録時に設定した文字列です。',
+      '部店番号: 口座情報ログインで利用する3桁番号です。',
+      '口座番号: 口座情報ログインで利用する6桁番号です。',
+    ],
+    [],
+  );
+
+  const toErrorMessage = (value: unknown) => (typeof value === 'string' ? value : undefined);
+
+  const updateField = (key: LoginFormFieldKey, value: string) => {
+    setValue(key, value, { shouldDirty: true, shouldTouch: true });
+    clearErrors([key, currentPasswordField]);
   };
 
-  const handleSubmit = () => {
-    const nextErrors: LoginErrors = {};
+  const handleLoginMethodChange = (nextMethod: LoginMethod) => {
+    setValue('loginMethod', nextMethod, { shouldDirty: true, shouldTouch: true });
+    clearErrors();
+  };
 
-    if (loginMethod === 'login-id') {
-      if (!loginId.trim()) {
-        nextErrors.loginId = 'ログインIDを入力してください。';
-      }
+  const onValidSubmit = async (values: LoginFormValues) => {
+    const userId = values.loginMethod === 'login-id' ? values.loginId : `${values.branchNumber}-${values.accountNumber}`;
+    await apiClient.auth.login({
+      loginMethod: values.loginMethod,
+      userId,
+    });
+    await trackAuditEvent({
+      actorType: 'guest',
+      eventType: 'login_success',
+      maskedPayload: createMaskedPayload(
+        {
+          accountNumber: values.accountNumber,
+          branchNumber: values.branchNumber,
+          loginId: values.loginId,
+          loginMethod: values.loginMethod,
+        },
+        {
+          accountNumber: maskAccountNumber,
+          loginId: maskLoginId,
+        },
+      ),
+      screen: 'login',
+    });
 
-      if (!loginIdPassword.trim()) {
-        nextErrors.loginIdPassword = 'パスワードを入力してください。';
-      }
-    } else {
-      if (!branchNumber.trim()) {
-        nextErrors.branchNumber = '部店番号を入力してください。';
-      }
-
-      if (!accountNumber.trim()) {
-        nextErrors.accountNumber = '口座番号を入力してください。';
-      }
-
-      if (!accountPassword.trim()) {
-        nextErrors.accountPassword = 'パスワードを入力してください。';
-      }
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors({
-        ...nextErrors,
-        form: '未入力の項目があります。赤字の案内に沿って入力してください。',
-      });
-      return;
-    }
-
-    setErrors({});
     onLogin();
   };
 
@@ -105,21 +135,8 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
               </span>
             </div>
 
-            <form
-              className='space-y-5'
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleSubmit();
-              }}
-            >
-              <Tabs
-                value={loginMethod}
-                onValueChange={(value) => {
-                  setLoginMethod(value as LoginMethod);
-                  setErrors({});
-                }}
-                className='space-y-5'
-              >
+            <form className='space-y-5' onSubmit={handleSubmit(onValidSubmit)} noValidate>
+              <Tabs value={loginMethod} onValueChange={(value) => handleLoginMethodChange(value as LoginMethod)} className='space-y-5'>
                 <TabsList className='grid h-auto w-full grid-cols-2 rounded-[12px] bg-[#f4efe6] p-1.5'>
                   <TabsTrigger
                     value='login-id'
@@ -139,26 +156,21 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
                   <TextField
                     label='ログインID'
                     autoComplete='username'
-                    error={errors.loginId}
+                    error={toErrorMessage(errors.loginId?.message)}
                     placeholder='例：ichiyoshi001'
-                    value={loginId}
-                    onChange={(value) => {
-                      clearError('loginId');
-                      setLoginId(value);
-                    }}
+                    value={loginIdValue}
+                    onChange={(value) => updateField('loginId', value)}
                   />
 
                   <TextField
                     label='パスワード'
                     type={showPassword ? 'text' : 'password'}
                     autoComplete='current-password'
-                    error={errors.loginIdPassword}
+                    error={toErrorMessage(errors.loginIdPassword?.message)}
                     placeholder='*************'
-                    value={loginIdPassword}
-                    onChange={(value) => {
-                      clearError('loginIdPassword');
-                      setLoginIdPassword(value);
-                    }}
+                    value={watch('loginIdPassword')}
+                    onChange={(value) => updateField('loginIdPassword', value)}
+                    onPaste={preventSensitivePaste}
                     trailing={passwordToggle}
                   />
                 </TabsContent>
@@ -167,27 +179,21 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
                   <div className='grid gap-4 sm:grid-cols-2'>
                     <TextField
                       label='部店番号'
-                      error={errors.branchNumber}
+                      error={toErrorMessage(errors.branchNumber?.message)}
                       inputMode='numeric'
                       maxLength={3}
                       placeholder='123'
-                      value={branchNumber}
-                      onChange={(value) => {
-                        clearError('branchNumber');
-                        setBranchNumber(value.replace(/\D/g, '').slice(0, 3));
-                      }}
+                      value={branchNumberValue}
+                      onChange={(value) => updateField('branchNumber', normalizeDigits(value, 3))}
                     />
                     <TextField
                       label='口座番号'
-                      error={errors.accountNumber}
+                      error={toErrorMessage(errors.accountNumber?.message)}
                       inputMode='numeric'
                       maxLength={6}
                       placeholder='123456'
-                      value={accountNumber}
-                      onChange={(value) => {
-                        clearError('accountNumber');
-                        setAccountNumber(value.replace(/\D/g, '').slice(0, 6));
-                      }}
+                      value={accountNumberValue}
+                      onChange={(value) => updateField('accountNumber', normalizeDigits(value, 6))}
                     />
                   </div>
 
@@ -195,20 +201,20 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
                     label='パスワード'
                     type={showPassword ? 'text' : 'password'}
                     autoComplete='current-password'
-                    error={errors.accountPassword}
+                    error={toErrorMessage(errors.accountPassword?.message)}
                     placeholder='*************'
-                    value={accountPassword}
-                    onChange={(value) => {
-                      clearError('accountPassword');
-                      setAccountPassword(value);
-                    }}
+                    value={watch('accountPassword')}
+                    onChange={(value) => updateField('accountPassword', value)}
+                    onPaste={preventSensitivePaste}
                     trailing={passwordToggle}
                   />
                 </TabsContent>
               </Tabs>
 
+              <FormErrorSummary errors={formErrorMessages} />
+
               <div className='space-y-3'>
-                <PrimaryButton type='submit' data-node-id='35610:66691'>
+                <PrimaryButton type='submit' disabled={isSubmitting} data-node-id='35610:66691'>
                   ログイン
                 </PrimaryButton>
                 <SecondaryButton type='button' onClick={onStartMemberRegistration}>
@@ -246,8 +252,23 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
                 パスワードをお忘れの方はこちらへ
               </button>
               <p className='mt-3'>
-                個人・法人ともにログインは左の共通フォームから進みます。法人のお客様向けの確認事項は上の「法人向けのご案内を見る」から確認できます。
+                個人・法人ともにログインは左の共通フォームから進みます。法人のお客様向けの確認事項は上の「法人向けの初期設定へ」から確認できます。
               </p>
+            </HintCard>
+
+            <HintCard title='用語補助'>
+              <ul className='space-y-1'>
+                {glossaryNotes.map((note) => (
+                  <li key={note}>・{note}</li>
+                ))}
+              </ul>
+            </HintCard>
+
+            <HintCard title='セキュリティ'>
+              <div className='flex items-start gap-2'>
+                <ShieldCheck className='mt-0.5 h-4 w-4 shrink-0 text-[var(--ichiyoshi-gold-soft)]' />
+                <p>パスワード欄では貼り付けを無効化し、入力情報の保護を強化しています。</p>
+              </div>
             </HintCard>
           </div>
         </div>

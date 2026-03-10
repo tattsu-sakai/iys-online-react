@@ -3,7 +3,6 @@ import { useAtom, useSetAtom } from 'jotai';
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
-  defaultFormState,
   isEmailValid,
   isPasswordValid,
   type FormErrors,
@@ -17,6 +16,7 @@ import {
 } from '@/features/initial-setup/state';
 import {
   flowPaths,
+  getFlowAccess,
   getPortfolioAssetsPath,
   getFlowScreenFromPathname,
 } from "@/features/flow-routes";
@@ -27,7 +27,11 @@ import { resetStep1StateAtom } from '@/features/account-opening-step1/state';
 import AccountOpeningStep2Flow from "@/features/account-opening-step2/AccountOpeningStep2Flow";
 import { resetStep2StateAtom } from '@/features/account-opening-step2/state';
 import ApplicationsScreen from "@/features/applications/ApplicationsScreen";
+import CustomerAddressChangeScreen from "@/features/customer-info/CustomerAddressChangeScreen";
+import CustomerBankChangeScreen from "@/features/customer-info/CustomerBankChangeScreen";
 import CustomerInfoScreen from "@/features/customer-info/CustomerInfoScreen";
+import CustomerIdentityVerificationScreen from "@/features/customer-info/CustomerIdentityVerificationScreen";
+import CustomerNameChangeScreen from "@/features/customer-info/CustomerNameChangeScreen";
 import AccountScreen from "@/features/initial-setup/screens/AccountScreen";
 import DoneScreen from "@/features/initial-setup/screens/DoneScreen";
 import IntroScreen from "@/features/initial-setup/screens/IntroScreen";
@@ -39,6 +43,17 @@ import VerifyScreen from "@/features/initial-setup/screens/VerifyScreen";
 import PersonalAccountOpeningFlow from "@/features/personal-account-opening/PersonalAccountOpeningFlow";
 import type { PersonalAccountOpeningStep } from "@/features/personal-account-opening/model";
 import { resetPersonalAccountOpeningStateAtom } from '@/features/personal-account-opening/state';
+import SessionTimeoutDialog from '@/features/security/SessionTimeoutDialog';
+import { trackAuditEvent } from '@/features/security/audit';
+import {
+  loginSessionAtom,
+  logoutSessionAtom,
+  markIdentityVerifiedAtom,
+  sessionStateAtom,
+  sessionThresholdsAtom,
+  touchSessionAtom,
+} from '@/features/security/state';
+import { useSessionTimeout } from '@/features/security/use-session-timeout';
 
 export default function InitialSetupFlow() {
   const location = useLocation();
@@ -46,10 +61,16 @@ export default function InitialSetupFlow() {
   const [formState, setFormState] = useAtom(initialSetupFormStateAtom);
   const [errors, setErrors] = useAtom(initialSetupErrorsAtom);
   const [verifyMessage, setVerifyMessage] = useAtom(initialSetupVerifyMessageAtom);
+  const [sessionState] = useAtom(sessionStateAtom);
+  const [sessionThresholds] = useAtom(sessionThresholdsAtom);
   const resetInitialSetupState = useSetAtom(resetInitialSetupStateAtom);
   const resetStep1State = useSetAtom(resetStep1StateAtom);
   const resetStep2State = useSetAtom(resetStep2StateAtom);
   const resetPersonalAccountOpeningState = useSetAtom(resetPersonalAccountOpeningStateAtom);
+  const loginSession = useSetAtom(loginSessionAtom);
+  const logoutSession = useSetAtom(logoutSessionAtom);
+  const markIdentityVerified = useSetAtom(markIdentityVerifiedAtom);
+  const touchSession = useSetAtom(touchSessionAtom);
   const step = getFlowScreenFromPathname(location.pathname);
   const step1Screen: Step1Screen | null =
     step === "accountOpeningStep1Intro"
@@ -74,14 +95,82 @@ export default function InitialSetupFlow() {
               ? "sent"
               : null;
 
+  const resetSetupState = () => {
+    resetInitialSetupState();
+  };
+
+  const resetApplicationFlows = () => {
+    resetStep1State();
+    resetStep2State();
+    resetPersonalAccountOpeningState();
+  };
+
+  const performLogout = (reason: 'session-timeout' | 'user-action') => {
+    resetSetupState();
+    resetApplicationFlows();
+    logoutSession();
+    void trackAuditEvent({
+      actorType: sessionState.authenticated ? 'authenticated_user' : 'guest',
+      eventType: reason === 'session-timeout' ? 'session_timeout' : 'logout',
+      maskedPayload: { reason },
+      screen: step ?? undefined,
+    });
+    navigate(flowPaths.login, { replace: true });
+  };
+
+  const { countdownMs, isWarningOpen } = useSessionTimeout({
+    enabled: sessionState.authenticated,
+    lastActiveAt: sessionState.lastActiveAt,
+    onActivity: touchSession,
+    onTimeout: () => performLogout('session-timeout'),
+    onWarning: () => {
+      void trackAuditEvent({
+        actorType: 'authenticated_user',
+        eventType: 'session_warning',
+        maskedPayload: { warningMs: sessionThresholds.warningMs },
+        screen: step ?? undefined,
+      });
+    },
+    timeoutAfterMs: sessionThresholds.timeoutMs,
+    warningAfterMs: sessionThresholds.warningMs,
+  });
+
   useEffect(() => {
     if (!step) {
       navigate(flowPaths.login, { replace: true });
       return;
     }
 
+    const access = getFlowAccess(step);
+    if (step === "login" && sessionState.authenticated) {
+      navigate(flowPaths.top, { replace: true });
+      return;
+    }
+
+    if (access !== 'public' && !sessionState.authenticated) {
+      void trackAuditEvent({
+        actorType: 'guest',
+        eventType: 'route_access_denied',
+        maskedPayload: { access, reason: 'auth-required' },
+        screen: step,
+      });
+      navigate(flowPaths.login, { replace: true });
+      return;
+    }
+
+    if (access === 'verified' && !sessionState.identityVerified) {
+      void trackAuditEvent({
+        actorType: 'authenticated_user',
+        eventType: 'route_access_denied',
+        maskedPayload: { access, reason: 'identity-verification-required' },
+        screen: step,
+      });
+      navigate(flowPaths.customerInfoIdentityVerification, { replace: true });
+      return;
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [navigate, step, location.pathname]);
+  }, [navigate, step, location.pathname, sessionState.authenticated, sessionState.identityVerified]);
 
   const updateField = <Key extends keyof FormState,>(
     key: Key,
@@ -94,16 +183,6 @@ export default function InitialSetupFlow() {
   const handleStart = () => {
     navigate(flowPaths.account);
     setVerifyMessage("");
-  };
-
-  const resetSetupState = () => {
-    resetInitialSetupState();
-  };
-
-  const resetApplicationFlows = () => {
-    resetStep1State();
-    resetStep2State();
-    resetPersonalAccountOpeningState();
   };
 
   const handleAccountSubmit = () => {
@@ -170,14 +249,12 @@ export default function InitialSetupFlow() {
   };
 
   const handleBackToTop = () => {
-    resetSetupState();
+    touchSession();
     navigate(flowPaths.top);
   };
 
   const handleLogout = () => {
-    resetSetupState();
-    resetApplicationFlows();
-    navigate(flowPaths.login);
+    performLogout('user-action');
   };
 
   const emailDisplay = formState.email.trim() || "user-input@example.com";
@@ -193,6 +270,8 @@ export default function InitialSetupFlow() {
           onLogin={() => {
             resetSetupState();
             resetApplicationFlows();
+            loginSession({ userId: 'user-001' });
+            touchSession();
             navigate(flowPaths.top);
           }}
           onStartMemberRegistration={() => {
@@ -255,7 +334,62 @@ export default function InitialSetupFlow() {
       ) : null}
       {step === "customerInfo" ? (
         <CustomerInfoScreen
+          onOpenAddressChange={() => navigate(flowPaths.customerInfoAddressChange)}
           onBackToTop={() => navigate(flowPaths.top)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenBankChange={() => navigate(flowPaths.customerInfoBankChange)}
+          onOpenNameChange={() => navigate(flowPaths.customerInfoNameChange)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+        />
+      ) : null}
+      {step === "customerInfoAddressChange" ? (
+        <CustomerAddressChangeScreen
+          onBackToCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenIdentityVerification={() => navigate(flowPaths.customerInfoIdentityVerification)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+        />
+      ) : null}
+      {step === "customerInfoBankChange" ? (
+        <CustomerBankChangeScreen
+          onBackToCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+        />
+      ) : null}
+      {step === "customerInfoNameChange" ? (
+        <CustomerNameChangeScreen
+          onBackToCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onBackToTop={() => navigate(flowPaths.top)}
+          onOpenIdentityVerification={() => navigate(flowPaths.customerInfoIdentityVerification)}
+          onOpenApplications={() => navigate(flowPaths.applications)}
+          onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
+          onLogout={handleLogout}
+          onOpenPortfolioAssets={(tab) =>
+            navigate(getPortfolioAssetsPath(tab))
+          }
+        />
+      ) : null}
+      {step === "customerInfoIdentityVerification" ? (
+        <CustomerIdentityVerificationScreen
+          onBackToNameChange={() => navigate(flowPaths.customerInfoNameChange)}
+          onBackToCustomerInfo={() => navigate(flowPaths.customerInfo)}
+          onBackToTop={() => navigate(flowPaths.top)}
+          onCompleteIdentityVerification={() => markIdentityVerified(true)}
           onOpenApplications={() => navigate(flowPaths.applications)}
           onOpenTradeHistory={() => navigate(flowPaths.tradeHistory)}
           onLogout={handleLogout}
@@ -356,6 +490,11 @@ export default function InitialSetupFlow() {
         />
       ) : null}
       {step === "done" ? <DoneScreen onBackToTop={handleBackToTop} /> : null}
+      <SessionTimeoutDialog
+        countdownMs={countdownMs}
+        open={isWarningOpen}
+        onExtendSession={() => touchSession()}
+      />
     </>
   );
 }

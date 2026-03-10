@@ -5,6 +5,12 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
+declare global {
+  interface Window {
+    otpInput?: (element: HTMLElement) => void;
+  }
+}
+
 if (import.meta.env.DEV) {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
@@ -16,7 +22,7 @@ if (import.meta.env.DEV) {
     </React.StrictMode>,
   );
 } else {
-  window.otpInput = (element) => {
+  window.otpInput = (element: HTMLElement) => {
     ReactDOM.createRoot(element).render(
       <React.StrictMode>
         <JotaiProvider>

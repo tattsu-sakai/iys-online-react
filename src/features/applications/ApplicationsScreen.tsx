@@ -1,5 +1,5 @@
 import { type ComponentType, useState } from 'react';
-import { Clock3, FileText, History, Landmark, Mail, Menu, Repeat, Sparkles, User, Wallet } from 'lucide-react';
+import { Clock3, Landmark, Mail, Menu, Repeat, Sparkles, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +11,7 @@ import {
   ServiceScreenHeroPanel,
 } from '@/features/initial-setup/components';
 import AppNavigationMenu from '@/features/navigation/AppNavigationMenu';
+import { createQuickAccessItems } from '@/features/navigation/quick-access';
 import { applicationActions } from '@/features/applications/model';
 import type { AssetTabKey } from '@/features/portfolio-assets/model';
 
@@ -31,13 +32,6 @@ const actionIcons: Record<(typeof applicationActions)[number]['key'], ComponentT
   'smart-transfer': Wallet,
 };
 
-const quickActions = [
-  { label: '預り資産', icon: Landmark },
-  { label: '取引履歴', icon: History },
-  { label: 'お客様情報', icon: User },
-  { label: '各種申込み', icon: FileText },
-] as const;
-
 export default function ApplicationsScreen({
   onBackToTop,
   onOpenCustomerInfo,
@@ -46,18 +40,14 @@ export default function ApplicationsScreen({
   onOpenTradeHistory,
 }: ApplicationsScreenProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const quickAccessItems = quickActions.map((action) => ({
-    ...action,
-    active: action.label === '各種申込み',
-    onClick:
-      action.label === '預り資産'
-        ? () => onOpenPortfolioAssets()
-        : action.label === '取引履歴'
-          ? onOpenTradeHistory
-          : action.label === 'お客様情報'
-            ? onOpenCustomerInfo
-            : undefined,
-  }));
+  const quickAccessItems = createQuickAccessItems({
+    activeKey: 'applications',
+    handlers: {
+      customerInfo: onOpenCustomerInfo,
+      portfolioAssets: () => onOpenPortfolioAssets(),
+      tradeHistory: onOpenTradeHistory,
+    },
+  });
 
   return (
     <main className='min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(162,133,86,0.18),transparent_24%),radial-gradient(circle_at_90%_10%,rgba(5,32,49,0.16),transparent_20%),linear-gradient(180deg,#f7f3eb_0%,#eef2f4_34%,#e6ebee_100%)]'>

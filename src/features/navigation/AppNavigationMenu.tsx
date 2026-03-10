@@ -10,13 +10,12 @@ import {
   LogOut,
   Mail,
   ShieldCheck,
-  User,
   X,
 } from 'lucide-react';
 
+import { pushRecentMenu, listRecentMenus, type NavigationScreen } from '@/features/navigation/recent-menu';
+import { trackAuditEvent } from '@/features/security/audit';
 import { cn } from '@/lib/utils';
-
-type NavigationScreen = 'top' | 'portfolioAssets' | 'tradeHistory' | 'customerInfo' | 'applications';
 
 type MenuItem = {
   description?: string;
@@ -141,6 +140,22 @@ export default function AppNavigationMenu({
       onSelect: item.key ? handlerMap[item.key] : item.onSelect,
     })),
   }));
+  const recentItems = listRecentMenus()
+    .map((screenKey) => {
+      const labelByKey: Record<NavigationScreen, string> = {
+        applications: '各種申込み',
+        customerInfo: 'お届出事項変更・追加申請',
+        portfolioAssets: '預り資産',
+        top: 'TOPページ',
+        tradeHistory: '取引履歴',
+      };
+      return {
+        key: screenKey,
+        label: labelByKey[screenKey],
+        onSelect: handlerMap[screenKey],
+      };
+    })
+    .filter((item) => !!item.onSelect && item.key !== activeScreen);
 
   return createPortal(
     <div className='fixed inset-0 z-[120]'>
@@ -195,6 +210,43 @@ export default function AppNavigationMenu({
 
               <div className='max-h-[min(78vh,44rem)] overflow-y-auto px-4 pb-4 pt-4 sm:px-5'>
                 <div className='space-y-5'>
+                  {recentItems.length > 0 ? (
+                    <section className='space-y-3'>
+                      <div className='flex items-center gap-2 px-1'>
+                        <span className='flex h-8 w-8 items-center justify-center rounded-[10px] bg-[rgba(162,133,86,0.12)] text-[var(--ichiyoshi-gold-soft)]'>
+                          <History className='h-4 w-4' />
+                        </span>
+                        <h3 className='text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--ichiyoshi-gold-soft)]'>
+                          最近使ったメニュー
+                        </h3>
+                      </div>
+                      <div className='space-y-2'>
+                        {recentItems.map((item) => (
+                          <button
+                            key={`recent-${item.key}`}
+                            type='button'
+                            onClick={() => {
+                              item.onSelect?.();
+                              void trackAuditEvent({
+                                actorType: 'authenticated_user',
+                                eventType: 'navigation_selected',
+                                screen: item.key,
+                                maskedPayload: { source: 'recent-menu' },
+                              });
+                              onClose();
+                            }}
+                            className='flex w-full items-center justify-between gap-3 rounded-[14px] border border-[rgba(5,32,49,0.08)] bg-white px-4 py-3 text-left text-[var(--ichiyoshi-navy)] shadow-[0_10px_24px_rgba(5,32,49,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[rgba(247,243,235,0.84)]'
+                          >
+                            <p className='text-[15px] font-semibold tracking-[0.03em]'>{item.label}</p>
+                            <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(5,32,49,0.05)] text-[var(--ichiyoshi-navy)]'>
+                              <ChevronRight className='h-4 w-4' />
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
                   {renderedSections.map((section) => {
                     const SectionIcon = section.icon;
 
@@ -227,6 +279,15 @@ export default function AppNavigationMenu({
                                           return;
                                         }
 
+                                        if (item.key) {
+                                          pushRecentMenu(item.key);
+                                          void trackAuditEvent({
+                                            actorType: 'authenticated_user',
+                                            eventType: 'navigation_selected',
+                                            screen: item.key,
+                                            maskedPayload: { source: 'navigation-menu' },
+                                          });
+                                        }
                                         item.onSelect?.();
                                         onClose();
                                       },
