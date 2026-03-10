@@ -11,26 +11,23 @@ declare global {
   }
 }
 
-if (import.meta.env.DEV) {
-  ReactDOM.createRoot(document.getElementById('root')!).render(
+function renderApp(element: HTMLElement) {
+  ReactDOM.createRoot(element).render(
     <React.StrictMode>
       <JotaiProvider>
         <BrowserRouter>
           <App />
         </BrowserRouter>
       </JotaiProvider>
-    </React.StrictMode>,
+    </React.StrictMode>
   );
-} else {
-  window.otpInput = (element: HTMLElement) => {
-    ReactDOM.createRoot(element).render(
-      <React.StrictMode>
-        <JotaiProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </JotaiProvider>
-      </React.StrictMode>,
-    );
-  };
+}
+
+window.otpInput = (element: HTMLElement) => {
+  renderApp(element);
+};
+
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  renderApp(rootElement);
 }
