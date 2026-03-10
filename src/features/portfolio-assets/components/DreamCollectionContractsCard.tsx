@@ -84,7 +84,7 @@ function DreamCollectionContractCard({ contract, detailsOpen, onToggle }: DreamC
                 {contract.course}
               </span>
               <span className='rounded-full border border-[rgba(5,32,49,0.08)] bg-white px-2.5 py-1 text-[11px] font-semibold text-[var(--ichiyoshi-navy)]'>
-                ドリコレ契約
+                ラップ契約
               </span>
             </div>
             <h3 className='mt-3 text-[16px] font-bold leading-[1.4] tracking-[0.03em] text-[var(--ichiyoshi-navy)] sm:text-[17px]'>
@@ -156,7 +156,7 @@ export default function DreamCollectionContractsCard({
 }: DreamCollectionContractsCardProps) {
   return (
     <ContentCard aria-busy={isLoading} className='space-y-4' data-node-id='32374:141286'>
-      <h2 className='text-[22px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-gold-soft)]'>ドリコレ契約 一覧</h2>
+      <h2 className='text-[22px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-gold-soft)]'>ラップ契約 一覧</h2>
 
       <div className='space-y-3'>
         {isLoading

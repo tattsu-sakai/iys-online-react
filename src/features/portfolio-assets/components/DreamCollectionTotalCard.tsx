@@ -19,7 +19,7 @@ export default function DreamCollectionTotalCard({ isLoading, summary }: DreamCo
 
   return (
     <ContentCard aria-busy={isLoading} className='space-y-4' data-node-id='32374:141285'>
-      <h2 className='text-[22px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-gold-soft)]'>ドリコレ契約 合計</h2>
+      <h2 className='text-[22px] font-bold tracking-[0.04em] text-[var(--ichiyoshi-gold-soft)]'>ラップ契約 合計</h2>
 
       <article className='relative overflow-hidden rounded-[14px] border border-[rgba(33,33,33,0.08)] bg-white shadow-[0_8px_22px_rgba(13,10,44,0.06)]'>
         <div
@@ -42,7 +42,7 @@ export default function DreamCollectionTotalCard({ isLoading, summary }: DreamCo
             <div className='relative pr-10'>
               <div className='flex flex-wrap items-center gap-2 text-[12px] text-[var(--ichiyoshi-ink-soft)]'>
                 <span className='rounded-full bg-[rgba(162,133,86,0.12)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ichiyoshi-navy)]'>
-                  ドリコレ契約
+                  ラップ契約
                 </span>
                 <span className='font-semibold tracking-[0.04em]'>ポートフォリオ全体</span>
               </div>

@@ -100,7 +100,7 @@ export type DreamCollectionContract = {
 };
 
 export const assetTabs: Array<{ key: AssetTabKey; label: string }> = [
-  { key: "dreamCollection", label: "ドリコレ" },
+  { key: "dreamCollection", label: "ラップ" },
   { key: "investmentTrust", label: "投信" },
   { key: "equity", label: "株式" },
   { key: "bond", label: "債券" },
@@ -422,8 +422,8 @@ export const assetTabSummary: Record<
     totalPnl: 0,
   },
   dreamCollection: {
-    holdingsLabel: "ドリコレ 4銘柄",
-    note: "ドリコレの保有明細は評価額順に要点だけ表示しています。",
+    holdingsLabel: "ラップ 4銘柄",
+    note: "ラップの保有明細は評価額順に要点だけ表示しています。",
     totalAmount: 97_118_604,
     totalPnl: 12_785_835,
   },
@@ -455,7 +455,7 @@ export const dreamCollectionTotal: DreamCollectionTotal = {
   ],
   evaluationAmount: 97_118_604,
   pnl: 12_785_835,
-  title: "ドリコレ契約合計",
+  title: "ラップ契約合計",
 };
 
 export const dreamCollectionContracts: DreamCollectionContract[] = [
@@ -471,8 +471,8 @@ export const dreamCollectionContracts: DreamCollectionContract[] = [
         right: { align: "center", label: "運用モデル", value: "運用モデル4 標準" },
       },
       {
-        left: { align: "center", label: "ドリコレミニ", value: "○（2万円/月）" },
-        right: { align: "center", label: "ドリコレNISA", value: "○" },
+        left: { align: "center", label: "ラップミニ", value: "○（2万円/月）" },
+        right: { align: "center", label: "ラップNISA", value: "○" },
       },
       {
         left: { align: "center", label: "決算月", value: "6月" },
@@ -480,7 +480,7 @@ export const dreamCollectionContracts: DreamCollectionContract[] = [
       },
       {
         left: { label: "HWM", value: "2,000,000円" },
-        right: { align: "center", label: "ドリコレパス", value: "○" },
+        right: { align: "center", label: "ラップパス", value: "○" },
       },
     ],
     evaluationAmount: 57_802_952,
@@ -504,8 +504,8 @@ export const dreamCollectionContracts: DreamCollectionContract[] = [
         right: { align: "center", label: "運用モデル", value: "運用モデル5 積極的" },
       },
       {
-        left: { align: "center", label: "ドリコレミニ", value: "○（3万円/月）" },
-        right: { align: "center", label: "ドリコレNISA", value: "○" },
+        left: { align: "center", label: "ラップミニ", value: "○（3万円/月）" },
+        right: { align: "center", label: "ラップNISA", value: "○" },
       },
       {
         left: { align: "center", label: "決算月", value: "3月" },
@@ -513,7 +513,7 @@ export const dreamCollectionContracts: DreamCollectionContract[] = [
       },
       {
         left: { label: "HWM", value: "1,000,000円" },
-        right: { align: "center", label: "ドリコレパス", value: "○" },
+        right: { align: "center", label: "ラップパス", value: "○" },
       },
     ],
     evaluationAmount: 28_538_889,
@@ -537,8 +537,8 @@ export const dreamCollectionContracts: DreamCollectionContract[] = [
         right: { align: "center", label: "運用モデル", value: "運用モデル3 安定" },
       },
       {
-        left: { align: "center", label: "ドリコレミニ", value: "○（1万円/月）" },
-        right: { align: "center", label: "ドリコレNISA", value: "○" },
+        left: { align: "center", label: "ラップミニ", value: "○（1万円/月）" },
+        right: { align: "center", label: "ラップNISA", value: "○" },
       },
       {
         left: { align: "center", label: "決算月", value: "9月" },
@@ -546,7 +546,7 @@ export const dreamCollectionContracts: DreamCollectionContract[] = [
       },
       {
         left: { label: "HWM", value: "3,000,000円" },
-        right: { align: "center", label: "ドリコレパス", value: "○" },
+        right: { align: "center", label: "ラップパス", value: "○" },
       },
     ],
     evaluationAmount: 10_776_763,

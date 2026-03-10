@@ -10,11 +10,10 @@ describe('pii helpers', () => {
 
   it('masks email and login id', () => {
     expect(maskEmail('abc123@example.com')).toBe('ab***@example.com');
-    expect(maskLoginId('ichiyoshi001')).toBe('ic***');
+    expect(maskLoginId('login001')).toBe('ic***');
   });
 
   it('normalizes numeric inputs', () => {
     expect(normalizeDigits('12a3-45', 4)).toBe('1234');
   });
 });
-

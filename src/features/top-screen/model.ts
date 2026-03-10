@@ -18,7 +18,7 @@ export type PortfolioChartDatum = PortfolioItem & {
 };
 
 export const portfolioChartConfig = {
-  dreamCollection: { label: 'ドリコレ', color: '#a28556' },
+  dreamCollection: { label: 'ラップ', color: '#a28556' },
   investmentTrust: { label: '投信', color: '#6f5b3b' },
   equity: { label: '株式', color: '#3e6074' },
   bond: { label: '債券', color: '#8096a5' },
@@ -27,7 +27,7 @@ export const portfolioChartConfig = {
 } satisfies ChartConfig;
 
 export const portfolioItems: PortfolioItem[] = [
-  { key: 'dreamCollection', label: 'ドリコレ', value: 97_118_604, pnl: 12_785_835 },
+  { key: 'dreamCollection', label: 'ラップ', value: 97_118_604, pnl: 12_785_835 },
   { key: 'investmentTrust', label: '投信', value: 10_000_000, pnl: 120_000 },
   { key: 'equity', label: '株式', value: 16_686_654, pnl: 9_352_324 },
   { key: 'bond', label: '債券', value: 9_000_000, pnl: 100_000 },

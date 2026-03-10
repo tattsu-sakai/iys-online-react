@@ -82,7 +82,7 @@ export default function ApplicationsScreen({
               >
                 <ServiceScreenHeroPanel
                   badge='申込みメニュー'
-                  description='NISA、スマート振替サービス、るいとう、i-box などの申込みを一覧で確認できます。'
+                  description='NISA、サンプル振替サービス、るいとう、資料送付サービス などの申込みを一覧で確認できます。'
                   pretitle='TOP / 各種申込み'
                   title='各種申込み'
                 />

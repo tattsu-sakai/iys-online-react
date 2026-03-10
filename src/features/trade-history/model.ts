@@ -1,20 +1,7 @@
 export type HistoryPeriodKey = '3m' | '6m' | '1y' | '3y';
-export type TradeHistoryProductKey =
-  | 'allExceptMrf'
-  | 'equity'
-  | 'investmentTrust'
-  | 'bond'
-  | 'dreamCollection'
-  | 'cash';
+export type TradeHistoryProductKey = 'allExceptMrf' | 'equity' | 'investmentTrust' | 'bond' | 'dreamCollection' | 'cash';
 export type TransactionCategoryKey = 'all' | 'execution' | 'income' | 'cash';
-export type TradeHistoryAccountKey =
-  | 'all'
-  | 'specified'
-  | 'general'
-  | 'nisa'
-  | 'tsumitateNisa'
-  | 'nisaGrowth'
-  | 'nisaReserve';
+export type TradeHistoryAccountKey = 'all' | 'specified' | 'general' | 'nisa' | 'tsumitateNisa' | 'nisaGrowth' | 'nisaReserve';
 export type TradeHistoryTone = 'buy' | 'sell' | 'income' | 'cash';
 
 export type TradeHistoryFilters = {
@@ -53,7 +40,7 @@ export const tradeHistoryProductOptions: Array<{ key: TradeHistoryProductKey; la
   { key: 'equity', label: '国内株式' },
   { key: 'investmentTrust', label: '投資信託' },
   { key: 'bond', label: '債券' },
-  { key: 'dreamCollection', label: 'ドリーム・コレクション' },
+  { key: 'dreamCollection', label: 'ラップ' },
   { key: 'cash', label: '現金・入出金' },
 ];
 
@@ -156,9 +143,9 @@ export const tradeHistoryRecords: TradeHistoryRecord[] = [
     feeLabel: '3,300円',
     id: 'tx-005',
     product: 'dreamCollection',
-    productLabel: 'ドリーム・コレクション',
+    productLabel: 'ラップ',
     quantityLabel: '20,000口',
-    securityName: 'サンプルファンドラップ ドリーム・コレクション',
+    securityName: 'サンプルファンドラップ ラップ',
     settlementAmount: 1_000_000,
     settlementDate: '2025-01-07',
     tone: 'buy',

@@ -157,7 +157,7 @@ export default function LoginScreen({ onLogin, onStartMemberRegistration, onShow
                     label='ログインID'
                     autoComplete='username'
                     error={toErrorMessage(errors.loginId?.message)}
-                    placeholder='例：ichiyoshi001'
+                    placeholder='例：login001'
                     value={loginIdValue}
                     onChange={(value) => updateField('loginId', value)}
                   />

@@ -8,7 +8,7 @@ describe('loginFormSchema', () => {
       accountNumber: '',
       accountPassword: '',
       branchNumber: '',
-      loginId: 'ichiyoshi001',
+      loginId: 'login001',
       loginIdPassword: 'secret',
       loginMethod: 'login-id',
     });
@@ -36,4 +36,3 @@ describe('loginFormSchema', () => {
     expect(issuePaths).toContain('accountNumber');
   });
 });
-
